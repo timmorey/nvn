@@ -1,13 +1,18 @@
 /**
-	 nvn.c - Created by Timothy Morey on 1/9/2013
+	 nvn.cpp - Created by Timothy Morey on 1/9/2013
  */
+
+#include "gl-window.hpp"
+
+#define MPICH_SKIP_MPICXX 1
+#include <mpi.h>
 
 #include <float.h>
 #include <getopt.h>
-#include <SDL/SDL.h>
-#include <mpi.h>
 #include <pnetcdf.h>
 #include <stdio.h>
+#include <stdlib.h>
+
 
 int main(int argc, char* argv[])
 {
@@ -15,8 +20,6 @@ int main(int argc, char* argv[])
 	int width = 800;
 	int height = 600;
 	char filename[256], varname[256];
-	SDL_Surface* window = 0;
-	SDL_Event event;
 	int quit = 0;
 	nc_type vartype;
 	int ncid, varid, ndims, dimid[NC_MAX_DIMS];
@@ -28,7 +31,6 @@ int main(int argc, char* argv[])
 	int row, col;
 
 	MPI_Init(&argc, &argv);
-	SDL_Init(SDL_INIT_EVERYTHING);
 
 	while((c = getopt(argc, argv, "f:h:v:w:")) != -1)
 	{
@@ -66,7 +68,7 @@ int main(int argc, char* argv[])
 		fprintf(stderr, "Failed to open '%s'.\n"
 						"  Error message: %s\n",
 						filename, ncmpi_strerror(ncresult));
-		goto shutdown;
+		exit(1);
 	}
 
 	ncresult = ncmpi_inq_varid(ncid, varname, &varid);
@@ -75,7 +77,7 @@ int main(int argc, char* argv[])
 		fprintf(stderr, "Cannot find a variable named '%s' in '%s'.\n"
 						"  Error message: %s\n",
 						varname, filename, ncmpi_strerror(ncresult));
-		goto shutdown;
+		exit(1);
 	}
 
 	ncresult = ncmpi_inq_var(ncid, varid, 0, &vartype, &ndims, dimid, 0);
@@ -84,12 +86,12 @@ int main(int argc, char* argv[])
 		fprintf(stderr, "Variable '%s' has %d dimensions.  "
 						"Only two-dimensional variables are supported at this time.\n",
 						varname, ndims);
-		goto shutdown;
+		exit(1);
 	}
 	else if(NC_DOUBLE != vartype)
 	{
 		fprintf(stderr, "Invalid variable type.  Only double is currently supported.");
-		goto shutdown;
+		exit(1);
 	}
 
 	varlen = 1;
@@ -99,16 +101,16 @@ int main(int argc, char* argv[])
 		varlen *= dimlen[i];
 	}
 
-	buf = malloc(varlen * sizeof(double));
+	buf = (double*)malloc(varlen * sizeof(double));
 	ncresult = ncmpi_get_var_double_all(ncid, varid, buf);
 	if(NC_NOERR != ncresult)
 	{
 		fprintf(stderr, "Failed to read data values.\n"
 						"Error message: %s\n", ncmpi_strerror(ncresult));
-		goto shutdown;
+		exit(1);
 	}
 
-	window = SDL_SetVideoMode(width, height, 32, SDL_SWSURFACE);
+//	window = SDL_SetVideoMode(width, height, 32, SDL_SWSURFACE);
 
 	min = DBL_MAX;
 	max = DBL_MIN;
@@ -118,33 +120,11 @@ int main(int argc, char* argv[])
 		if(buf[i] > max) max = buf[i];
 	}
 
-	Uint32* pixels = (Uint32*)window->pixels;
-	for(i = 0; i < varlen; i++)
-	{
-		row = i / dimlen[1];
-		col = i % dimlen[1];
-		pixels[row * window->w + col] = 0x00010000 * (int)((buf[i] - min) / (max - min) * 255);
-		pixels[row * window->w + col] += 0x000000ff - (int)((buf[i] - min) / (max - min) * 255);
-	}
+	GLWindow win("blah", 100, 100, 640, 480, false);
+	
+	while(win.IsActive())
+		sleep(1);
 
-	SDL_Flip(window);
-
-	while(!quit)
-	{
-		if(SDL_PollEvent(&event))
-		{
-			switch(event.type)
-			{
-			case SDL_QUIT:
-				printf("Quit event received\n");
-				quit = 1;
-				break;
-			}
-		}
-	}
-
-shutdown:
-	SDL_Quit();
 	MPI_Finalize();
 	return 0;
 }

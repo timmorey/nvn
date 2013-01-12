@@ -5,18 +5,24 @@
 #
 
 CC=mpicc
+CXX=mpicc
 LD=mpicc
 
-CFLAGS += -MD -MP -g -I$(SDL_INC) -I$(PNETCDF_INC)
-LDFLAGS += -g -L$(SDL_LIB) -L$(PNETCDF_LIB)
-LDLIBS = -lSDL -lpnetcdf
+CFLAGS += -MD -MP -g -I$(PNETCDF_INC)
+CPPFLAGS += -g -I$(PNETCDF_INC)
+LDFLAGS += -g -L$(PNETCDF_LIB)
+LDLIBS = -lpnetcdf -lGL -lGLU -lpthread -lX11
 
-SRC = $(wildcard *.c)
+CSRC = $(wildcard *.c)
+CPPSRC = $(wildcard *.cpp)
+OBJS = $(patsubst %.c,%.o,$(CSRC)) $(patsubst %.cpp,%.o,$(CPPSRC))
 
-nvn: $(SRC:%.c=%.o)
+nvn: $(OBJS)
 	$(LD) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
--include $(SRC:%.c=%.d)
+-include $(CPPSRC:%.cpp=%.d)
+
+-include $(CSRC:%.c=%.d)
 
 clean:
 	rm -v -f nvn *.d *.o *~ *.gch
