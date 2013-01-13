@@ -7,6 +7,7 @@
 
 
 #include "communication-queue.h"
+#include "model.hpp"
 
 #include <list>
 
@@ -26,7 +27,9 @@ public:
 	~GLWindow();
 
 public:
+	int AddLayer(Layer* layer);
 	int CloseWindow();
+	int Refresh();
 
 public:
 	bool IsActive() const;
@@ -50,6 +53,7 @@ protected:
 	Window _XWindow;
 	GLXContext _GLXContext;
 	Atom _WMDeleteMessage;
+	Model _Model;
 
 protected:
 	static std::list<GLWindow*> _Windows;

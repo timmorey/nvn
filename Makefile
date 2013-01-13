@@ -8,10 +8,11 @@ CC=mpicc
 CXX=mpicc
 LD=mpicc
 
-CFLAGS += -MD -MP -g -I$(PNETCDF_INC)
-CPPFLAGS += -g -I$(PNETCDF_INC)
-LDFLAGS += -g -L$(PNETCDF_LIB)
-LDLIBS = -lpnetcdf -lGL -lGLU -lpthread -lX11
+INCLUDES = -I$(PNETCDF_INC) -I/usr/include/libxml2
+CFLAGS += $(INCLUDES)
+CPPFLAGS += $(INCLUDES)
+LDFLAGS += -L$(PNETCDF_LIB)
+LDLIBS = -lpnetcdf -lGL -lGLU -lpthread -lX11 -lxml2
 
 CSRC = $(wildcard *.c)
 CPPSRC = $(wildcard *.cpp)

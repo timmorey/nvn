@@ -3,11 +3,11 @@
  */
 
 #include "gl-window.hpp"
+#include "layer.hpp"
 
 #define MPICH_SKIP_MPICXX 1
 #include <mpi.h>
 
-#include <float.h>
 #include <getopt.h>
 #include <pnetcdf.h>
 #include <stdio.h>
@@ -110,17 +110,8 @@ int main(int argc, char* argv[])
 		exit(1);
 	}
 
-//	window = SDL_SetVideoMode(width, height, 32, SDL_SWSURFACE);
-
-	min = DBL_MAX;
-	max = DBL_MIN;
-	for(i = 0; i < varlen; i++)
-	{
-		if(buf[i] < min) min = buf[i];
-		if(buf[i] > max) max = buf[i];
-	}
-
 	GLWindow win("blah", 100, 100, 640, 480, false);
+	win.AddLayer(new Layer(dimlen[0], dimlen[1], MPI_DOUBLE, buf));
 	
 	while(win.IsActive())
 		sleep(1);

@@ -4,6 +4,8 @@
 
 #include "communication-queue.h"
 #include "gl-window.hpp"
+#include "layer.hpp"
+#include "model.hpp"
 #include "nvn.h"
 
 #include <pthread.h>
@@ -37,151 +39,6 @@ typedef struct
   long InputMode;
   unsigned long status;
 } Hints;
-
-void draw()
-{
-    /* Our angle of rotation. */
-    static float angle = 0.0f;
-
-    /*
-     * EXERCISE:
-     * Replace this awful mess with vertex
-     * arrays and a call to glDrawElements.
-     *
-     * EXERCISE:
-     * After completing the above, change
-     * it to use compiled vertex arrays.
-     *
-     * EXERCISE:
-     * Verify my windings are correct here ;).
-     */
-    static GLfloat v0[] = { -1.0f, -1.0f,  1.0f };
-    static GLfloat v1[] = {  1.0f, -1.0f,  1.0f };
-    static GLfloat v2[] = {  1.0f,  1.0f,  1.0f };
-    static GLfloat v3[] = { -1.0f,  1.0f,  1.0f };
-    static GLfloat v4[] = { -1.0f, -1.0f, -1.0f };
-    static GLfloat v5[] = {  1.0f, -1.0f, -1.0f };
-    static GLfloat v6[] = {  1.0f,  1.0f, -1.0f };
-    static GLfloat v7[] = { -1.0f,  1.0f, -1.0f };
-    static GLubyte red[]    = { 255,   0,   0, 255 };
-    static GLubyte green[]  = {   0, 255,   0, 255 };
-    static GLubyte blue[]   = {   0,   0, 255, 255 };
-    static GLubyte white[]  = { 255, 255, 255, 255 };
-    static GLubyte yellow[] = {   0, 255, 255, 255 };
-    static GLubyte black[]  = {   0,   0,   0, 255 };
-    static GLubyte orange[] = { 255, 255,   0, 255 };
-    static GLubyte purple[] = { 255,   0, 255,   0 };
-
-    /* Clear the color and depth buffers. */
-    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-
-    /* We don't want to modify the projection matrix. */
-    glMatrixMode( GL_MODELVIEW );
-    glLoadIdentity( );
-
-    /* Move down the z-axis. */
-    glTranslatef( 0.0, 0.0, -5.0 );
-
-    /* Rotate. */
-    glRotatef( angle, 0.0, 1.0, 0.0 );
-
-    //if( should_rotate ) {
-
-        if( ++angle > 360.0f ) {
-            angle = 0.0f;
-        }
-
-				//}
-
-    /* Send our triangle data to the pipeline. */
-    glBegin( GL_TRIANGLES );
-
-    glColor4ubv( red );
-    glVertex3fv( v0 );
-    glColor4ubv( green );
-    glVertex3fv( v1 );
-    glColor4ubv( blue );
-    glVertex3fv( v2 );
-
-    glColor4ubv( red );
-    glVertex3fv( v0 );
-    glColor4ubv( blue );
-    glVertex3fv( v2 );
-    glColor4ubv( white );
-    glVertex3fv( v3 );
-
-    glColor4ubv( green );
-    glVertex3fv( v1 );
-    glColor4ubv( black );
-    glVertex3fv( v5 );
-    glColor4ubv( orange );
-    glVertex3fv( v6 );
-
-    glColor4ubv( green );
-    glVertex3fv( v1 );
-    glColor4ubv( orange );
-    glVertex3fv( v6 );
-    glColor4ubv( blue );
-    glVertex3fv( v2 );
-
-    glColor4ubv( black );
-    glVertex3fv( v5 );
-    glColor4ubv( yellow );
-    glVertex3fv( v4 );
-    glColor4ubv( purple );
-    glVertex3fv( v7 );
-
-    glColor4ubv( black );
-    glVertex3fv( v5 );
-    glColor4ubv( purple );
-    glVertex3fv( v7 );
-    glColor4ubv( orange );
-    glVertex3fv( v6 );
-
-    glColor4ubv( yellow );
-    glVertex3fv( v4 );
-    glColor4ubv( red );
-    glVertex3fv( v0 );
-    glColor4ubv( white );
-    glVertex3fv( v3 );
-
-    glColor4ubv( yellow );
-    glVertex3fv( v4 );
-    glColor4ubv( white );
-    glVertex3fv( v3 );
-    glColor4ubv( purple );
-    glVertex3fv( v7 );
-
-    glColor4ubv( white );
-    glVertex3fv( v3 );
-    glColor4ubv( blue );
-    glVertex3fv( v2 );
-    glColor4ubv( orange );
-    glVertex3fv( v6 );
-
-    glColor4ubv( white );
-    glVertex3fv( v3 );
-    glColor4ubv( orange );
-    glVertex3fv( v6 );
-    glColor4ubv( purple );
-    glVertex3fv( v7 );
-
-    glColor4ubv( green );
-    glVertex3fv( v1 );
-    glColor4ubv( red );
-    glVertex3fv( v0 );
-    glColor4ubv( yellow );
-    glVertex3fv( v4 );
-
-    glColor4ubv( green );
-    glVertex3fv( v1 );
-    glColor4ubv( yellow );
-    glVertex3fv( v4 );
-    glColor4ubv( black );
-    glVertex3fv( v5 );
-
-    glEnd( );
-}
 
 
 /******************************************************************************
@@ -262,6 +119,12 @@ GLWindow::~GLWindow()
  * Public Members
  ******************************************************************************/
 
+int GLWindow::AddLayer(Layer* layer)
+{
+	_Model.TheLayer = layer;
+	this->Refresh();
+}
+
 int GLWindow::CloseWindow()
 {
 	if(pthread_equal(_UIThread, pthread_self()))
@@ -298,6 +161,18 @@ bool GLWindow::IsActive() const
 			break;
 		}
 	}
+
+	return retval;
+}
+
+int GLWindow::Refresh()
+{
+	int retval = NVN_NOERR;
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	if(_Model.TheLayer)
+		_Model.TheLayer->Render();
+	glXSwapBuffers(_Display, _XWindow);
 
 	return retval;
 }
@@ -409,9 +284,7 @@ int GLWindow::CreateWindow()
 		glLoadIdentity();
 		gluPerspective(60.0, (float)_Width / (float)_Height, 1.0, 1024.0);
 
-		glClear(GL_COLOR_BUFFER_BIT);		
-		draw();
-		glXSwapBuffers(_Display, _XWindow);
+		this->Refresh();
 
 		_Windows.push_back(this);
 	}
@@ -445,10 +318,7 @@ int GLWindow::HandleXConfigureNotify(XEvent event)
 int GLWindow::HandleXExpose(XEvent event)
 {
 	printf("Handling XExpose...\n");
-
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	draw();
-	glXSwapBuffers(_Display, _XWindow);
+	this->Refresh();
 }
 
 
