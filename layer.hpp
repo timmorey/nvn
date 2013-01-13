@@ -15,12 +15,13 @@ class Layer
 {
 public:
 	Layer(int width, int height, MPI_Datatype datatype, void* data);
+	~Layer();
 
 public:
 	ColorRamp& Ramp() { return _Ramp; }
 
 public:
-	int Render() const;
+	int Render();
 
 public:
 	int GetWidth() const { return _Width; }
@@ -34,6 +35,10 @@ protected:
 	ColorRamp _Ramp;
 	Variant _MinVal;
 	Variant _MaxVal;
+	char* _TexBitmap;
+	int _TexWidth;
+	int _TexHeight;
+	unsigned int _TextureID;
 };
 
 #endif

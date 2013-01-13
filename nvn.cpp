@@ -111,7 +111,7 @@ int main(int argc, char* argv[])
 	}
 
 	GLWindow win("blah", 100, 100, 640, 480, false);
-	win.AddLayer(new Layer(dimlen[0], dimlen[1], MPI_DOUBLE, buf));
+	win.AddLayer(new Layer(dimlen[1], dimlen[0], MPI_DOUBLE, buf));
 	
 	while(win.IsActive())
 		sleep(1);

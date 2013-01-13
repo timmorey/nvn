@@ -294,17 +294,17 @@ double VariantValueAsDouble(Variant v)
 
   switch(v.Type)
   {
-    case MPI_BYTE:
+    case VariantTypeByte:
       retval = (double)v.Value.ByteVal; break;
-    case MPI_CHAR:
+    case VariantTypeChar:
       retval = (double)v.Value.CharVal; break;
-    case MPI_SHORT:
+    case VariantTypeShort:
       retval = (double)v.Value.ShortVal; break;
-    case MPI_DOUBLE:
+    case VariantTypeDouble:
       retval = v.Value.DoubleVal; break;
-    case MPI_FLOAT:
+    case VariantTypeFloat:
       retval = (double)v.Value.FloatVal; break;
-    case MPI_INT:
+    case VariantTypeInt:
       retval = (double)v.Value.IntVal; break;
   }
 

@@ -169,10 +169,21 @@ int GLWindow::Refresh()
 {
 	int retval = NVN_NOERR;
 
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	if(_Model.TheLayer)
-		_Model.TheLayer->Render();
-	glXSwapBuffers(_Display, _XWindow);
+	if(pthread_equal(_UIThread, pthread_self()))
+	{
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		if(_Model.TheLayer)
+			_Model.TheLayer->Render();
+		glXSwapBuffers(_Display, _XWindow);
+	}
+	else
+	{
+		Message msg;
+
+		InitMessage(&msg, "Refresh");
+		msg.Arguments[0] = this;
+		Push(&_UIQueue, msg);
+	}
 
 	return retval;
 }
@@ -272,17 +283,19 @@ int GLWindow::CreateWindow()
 	{		
 		glXMakeCurrent(_Display, _XWindow, _GLXContext);
 		XMapWindow(_Display, _XWindow);
-		
-		glShadeModel(GL_SMOOTH);
-		glCullFace(GL_BACK);
-		glFrontFace(GL_CCW);
-		glEnable(GL_CULL_FACE);
-		glClearColor(0.0, 0.0, 0.0, 1.0);
-		glViewport(0, 0, _Width, _Height);
 
+		glShadeModel(GL_SMOOTH);
+		glClearColor(0.0, 0.0, 0.0, 1.0);
+
+		glViewport(0, 0, _Width, _Height);
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
 		gluPerspective(60.0, (float)_Width / (float)_Height, 1.0, 1024.0);
+		
+		//glCullFace(GL_BACK);
+		//glFrontFace(GL_CCW);
+		//glEnable(GL_CULL_FACE);
+		//glEnable(GL_TEXTURE_2D);
 
 		this->Refresh();
 
@@ -414,6 +427,13 @@ int GLWindow::RunMessageLoop()
 				{
 					ret = ((GLWindow*)msg.Arguments[0])->DestroyWindow();
 					
+					if(msg.Handled)
+						*msg.Handled = 1;
+				}
+				else if(0 == strcmp("Refresh", msg.Message))
+				{
+					ret = ((GLWindow*)msg.Arguments[0])->Refresh();
+
 					if(msg.Handled)
 						*msg.Handled = 1;
 				}

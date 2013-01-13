@@ -9,9 +9,9 @@ CXX=mpicc
 LD=mpicc
 
 INCLUDES = -I$(PNETCDF_INC) -I/usr/include/libxml2
-CFLAGS += $(INCLUDES)
-CPPFLAGS += $(INCLUDES)
-LDFLAGS += -L$(PNETCDF_LIB)
+CFLAGS += -g $(INCLUDES)
+CPPFLAGS += -g $(INCLUDES)
+LDFLAGS += -g -L$(PNETCDF_LIB)
 LDLIBS = -lpnetcdf -lGL -lGLU -lpthread -lX11 -lxml2
 
 CSRC = $(wildcard *.c)
