@@ -4,6 +4,7 @@
 
 #include "gl-window.hpp"
 #include "layer.hpp"
+#include "nvn.h"
 
 #define MPICH_SKIP_MPICXX 1
 #include <mpi.h>
@@ -14,6 +15,18 @@
 #include <stdlib.h>
 
 
+/**
+	 Parses a string representation of a hyperslab, which is a comma-delimited
+	 sequence of integers.
+
+	 @param str A null terminated string that describes a hyperslab.
+	 @param slab An array large enough to hold the parsed hyperslab definition 
+	 (NC_MAX_DIMS should be long enough).
+
+	 @return 0 if the operation was successful, and an error code otherwise.
+ */
+int ParseHyperslab(const char* str, MPI_Offset slab[]);
+
 int main(int argc, char* argv[])
 {
 	char c;
@@ -23,19 +36,32 @@ int main(int argc, char* argv[])
 	int quit = 0;
 	nc_type vartype;
 	int ncid, varid, ndims, dimid[NC_MAX_DIMS];
+	int slabdims;
 	MPI_Offset varlen, dimlen[NC_MAX_DIMS];
 	int ncresult;
 	int i;
 	double* buf = 0;
 	double min, max;
 	int row, col;
+	MPI_Offset slabstart[NC_MAX_DIMS], slabcount[NC_MAX_DIMS];
 
 	MPI_Init(&argc, &argv);
 
-	while((c = getopt(argc, argv, "f:h:v:w:")) != -1)
+	for(i = 0; i < NC_MAX_DIMS; i++)
+	{
+		slabstart[i] = 0;
+		slabcount[i] = -1;
+	}
+
+	while((c = getopt(argc, argv, "c:f:h:s:v:w:")) != -1)
 	{
 		switch(c)
 		{
+		case 'c':
+			// Hyperslab count to define the data we're rendering
+			ParseHyperslab(optarg, slabcount);
+			break;
+
 		case 'f':
 			// Input data filename
 			strcpy(filename, optarg);
@@ -44,6 +70,11 @@ int main(int argc, char* argv[])
 		case 'h':
 			// Display window height
 			height = atoi(optarg);
+			break;
+			
+		case 's':
+			// Hyperslab start to define the data we're rendering
+			ParseHyperslab(optarg, slabstart);
 			break;
 
 		case 'v':
@@ -81,28 +112,41 @@ int main(int argc, char* argv[])
 	}
 
 	ncresult = ncmpi_inq_var(ncid, varid, 0, &vartype, &ndims, dimid, 0);
-	if(ndims != 2)
-	{
-		fprintf(stderr, "Variable '%s' has %d dimensions.  "
-						"Only two-dimensional variables are supported at this time.\n",
-						varname, ndims);
-		exit(1);
-	}
-	else if(NC_DOUBLE != vartype)
+	if(NC_DOUBLE != vartype)
 	{
 		fprintf(stderr, "Invalid variable type.  Only double is currently supported.");
 		exit(1);
 	}
 
 	varlen = 1;
+	slabdims = 0;
+	width = -1;
+	height = -1;
 	for(i = 0; i < ndims; i++)
 	{
 		ncresult = ncmpi_inq_dimlen(ncid, dimid[i], &dimlen[i]);
 		varlen *= dimlen[i];
+
+		if(slabcount[i] == -1)
+			slabcount[i] = dimlen[i] - slabstart[i];
+
+		if(slabcount[i] > 1)
+		{
+			slabdims++;
+			if(height < 0) height = slabcount[i];
+			else width = slabcount[i];
+		}
+	}
+
+	if(slabdims != 2)
+	{
+		fprintf(stderr, "Only two-dimensional data is supported, but the hyperslab "
+						"defines a %d-dimensional space.\n", ndims);
+		exit(1);
 	}
 
 	buf = (double*)malloc(varlen * sizeof(double));
-	ncresult = ncmpi_get_var_double_all(ncid, varid, buf);
+	ncresult = ncmpi_get_vara_double_all(ncid, varid, slabstart, slabcount, buf);
 	if(NC_NOERR != ncresult)
 	{
 		fprintf(stderr, "Failed to read data values.\n"
@@ -111,11 +155,28 @@ int main(int argc, char* argv[])
 	}
 
 	GLWindow win("blah", 100, 100, 640, 480, false);
-	win.AddLayer(new Layer(dimlen[1], dimlen[0], MPI_DOUBLE, buf));
+	win.AddLayer(new Layer(width, height, MPI_DOUBLE, buf));
 	
 	while(win.IsActive())
 		sleep(1);
 
 	MPI_Finalize();
 	return 0;
+}
+
+int ParseHyperslab(const char* str, MPI_Offset slab[])
+{
+	int retval = NVN_NOERR;
+	int i;
+	int d = 0;
+
+	while(str && strlen(str) > 0)
+	{
+		slab[d++] = atoi(str);
+		str = strchr(str, ',');
+		if(str)
+			str++;
+	}
+
+	return retval;
 }
