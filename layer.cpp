@@ -55,11 +55,9 @@ int Layer::Render()
 {
 	// Render Method 1: Render each grid point as a colored square:
 	//
+
 	// glMatrixMode( GL_MODELVIEW );
 	// glLoadIdentity( );
-	// gluLookAt(_Width / 2.0, _Height / 2.0, 1000.0,
-	//  					_Width / 2.0, _Height / 2.0, 0.0,
-	//  					0.0,          1.0,           0.0);
 
 	// glBegin(GL_QUADS);
 	// {
@@ -123,9 +121,6 @@ int Layer::Render()
 	
 	glMatrixMode( GL_MODELVIEW );
 	glLoadIdentity( );
-	gluLookAt(_Width / 2.0, _Height / 2.0, 1000.0,
-	 					_Width / 2.0, _Height / 2.0, 0.0,
-	 					0.0,          1.0,           0.0);
 
 	glBindTexture(GL_TEXTURE_2D, _TextureID);
 	glEnable(GL_TEXTURE_2D);

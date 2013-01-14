@@ -64,7 +64,10 @@ GLWindow::GLWindow(const char* title, int x, int y, int width, int height,
 		_Y(y),
 		_Width(width),
 		_Height(height),
-		_Borderless(borderless)
+		_Borderless(borderless),
+		_CameraX(0.0f),
+		_CameraY(0.0f),
+		_CameraZ(0.0f)
 {
 	if(! _UIThreadActive)
 	{
@@ -122,6 +125,9 @@ GLWindow::~GLWindow()
 int GLWindow::AddLayer(Layer* layer)
 {
 	_Model.TheLayer = layer;
+	_CameraX = 0.0f;
+	_CameraY = 0.0f;
+	_CameraZ = -1000.0f;
 	this->Refresh();
 }
 
@@ -171,6 +177,12 @@ int GLWindow::Refresh()
 
 	if(pthread_equal(_UIThread, pthread_self()))
 	{
+		glViewport(0, 0, _Width, _Height);
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		gluPerspective(60.0, (float)_Width / (float)_Height, 1.0, 1024.0);
+		glTranslatef(_CameraX, _CameraY, _CameraZ);
+
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		if(_Model.TheLayer)
 			_Model.TheLayer->Render();
@@ -283,21 +295,7 @@ int GLWindow::CreateWindow()
 	{		
 		glXMakeCurrent(_Display, _XWindow, _GLXContext);
 		XMapWindow(_Display, _XWindow);
-
-		glShadeModel(GL_SMOOTH);
 		glClearColor(0.0, 0.0, 0.0, 1.0);
-
-		glViewport(0, 0, _Width, _Height);
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		gluPerspective(60.0, (float)_Width / (float)_Height, 1.0, 1024.0);
-		
-		//glCullFace(GL_BACK);
-		//glFrontFace(GL_CCW);
-		//glEnable(GL_CULL_FACE);
-		//glEnable(GL_TEXTURE_2D);
-
-		this->Refresh();
 
 		_Windows.push_back(this);
 	}
@@ -313,24 +311,46 @@ int GLWindow::DestroyWindow()
 	_Windows.remove(this);
 }
 
+int GLWindow::HandleXButtonPress(XEvent event)
+{
+	switch(event.xbutton.button)
+	{
+	case Button4:
+		_CameraZ += 10.0f;
+		this->Refresh();
+		break;
+	case Button5:
+		_CameraZ -= 10.0f;
+		this->Refresh();
+		break;
+	}
+}
+
 int GLWindow::HandleXConfigureNotify(XEvent event)
 {
-	printf("Handling XConfigureNotify\n");
-
 	_X = event.xconfigure.x;
 	_Y = event.xconfigure.y;
 	_Width = event.xconfigure.width;
 	_Height = event.xconfigure.height;
-
-	glViewport(0, 0, _Width, _Height);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluPerspective(60.0, (float)_Width / (float)_Height, 1.0, 1024.0);
 }
 
 int GLWindow::HandleXExpose(XEvent event)
 {
-	printf("Handling XExpose...\n");
+	this->Refresh();
+}
+
+int GLWindow::HandleXKeyPress(XEvent event)
+{
+	KeySym key = XLookupKeysym(&event.xkey, 0);
+	if(XK_Left == key)
+		_CameraX += 1.0f;
+	else if(XK_Right == key)
+		_CameraX -= 1.0f;
+	else if(XK_Up == key)
+		_CameraY -= 1.0f;
+	else if(XK_Down == key)
+		_CameraY += 1.0f;
+
 	this->Refresh();
 }
 
@@ -450,6 +470,13 @@ int GLWindow::RunMessageLoop()
 			XNextEvent(_Display, &event);
 			switch(event.type)
 			{
+			case ButtonPress:
+				// A mouse button has been pressed (or the wheel has moved
+				win = FindWindow(event.xbutton.window);
+				if(win)
+					win->HandleXButtonPress(event);
+				break;
+
 			case ClientMessage:
 				win = FindWindow(event.xclient.window);
 				if(win && event.xclient.data.l[0] == win->_WMDeleteMessage)
@@ -468,6 +495,13 @@ int GLWindow::RunMessageLoop()
 				win = FindWindow(event.xexpose.window);
 				if(win)
 					win->HandleXExpose(event);
+				break;
+
+			case KeyPress:
+				// A keyboard key has been pressed
+				win = FindWindow(event.xkey.window);
+				if(win)
+					win->HandleXKeyPress(event);
 				break;
 			}
 		}		

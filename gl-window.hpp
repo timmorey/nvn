@@ -43,8 +43,10 @@ protected:
 	int CreateWindow();
 	int DestroyWindow();
 
+	int HandleXButtonPress(XEvent event);
 	int HandleXConfigureNotify(XEvent event);
 	int HandleXExpose(XEvent event);
+	int HandleXKeyPress(XEvent event);
 
 protected:
 	int _X, _Y, _Width, _Height;
@@ -54,6 +56,7 @@ protected:
 	GLXContext _GLXContext;
 	Atom _WMDeleteMessage;
 	Model _Model;
+	float _CameraX, _CameraY, _CameraZ;
 
 protected:
 	static std::list<GLWindow*> _Windows;
