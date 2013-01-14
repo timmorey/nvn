@@ -67,7 +67,8 @@ GLWindow::GLWindow(const char* title, int x, int y, int width, int height,
 		_Borderless(borderless),
 		_CameraX(0.0f),
 		_CameraY(0.0f),
-		_CameraZ(0.0f)
+		_CameraZ(0.0f),
+		_LeftMouseDown(false)
 {
 	if(! _UIThreadActive)
 	{
@@ -315,13 +316,28 @@ int GLWindow::HandleXButtonPress(XEvent event)
 {
 	switch(event.xbutton.button)
 	{
+	case Button1:
+		_LeftMouseDown = true;
+		break;
+
 	case Button4:
 		_CameraZ += 10.0f;
 		this->Refresh();
 		break;
+
 	case Button5:
 		_CameraZ -= 10.0f;
 		this->Refresh();
+		break;
+	}
+}
+
+int GLWindow::HandleXButtonRelease(XEvent event)
+{
+	switch(event.xbutton.button)
+	{
+	case Button1:
+		_LeftMouseDown = false;
 		break;
 	}
 }
@@ -343,17 +359,29 @@ int GLWindow::HandleXKeyPress(XEvent event)
 {
 	KeySym key = XLookupKeysym(&event.xkey, 0);
 	if(XK_Left == key)
-		_CameraX += 1.0f;
-	else if(XK_Right == key)
 		_CameraX -= 1.0f;
+	else if(XK_Right == key)
+		_CameraX += 1.0f;
 	else if(XK_Up == key)
-		_CameraY -= 1.0f;
-	else if(XK_Down == key)
 		_CameraY += 1.0f;
+	else if(XK_Down == key)
+		_CameraY -= 1.0f;
 
 	this->Refresh();
 }
 
+int GLWindow::HandleXMotionNotify(XEvent event)
+{
+	if(_LeftMouseDown)
+	{
+		_CameraX -= (float)(_PrevX - event.xmotion.x);
+		_CameraY += (float)(_PrevY - event.xmotion.y);
+		this->Refresh();
+	}
+
+	_PrevX = event.xmotion.x;
+	_PrevY = event.xmotion.y;
+}
 
 /******************************************************************************
  * Static Members:
@@ -477,6 +505,13 @@ int GLWindow::RunMessageLoop()
 					win->HandleXButtonPress(event);
 				break;
 
+			case ButtonRelease:
+				// A mouse button has been pressed (or the wheel has moved
+				win = FindWindow(event.xbutton.window);
+				if(win)
+					win->HandleXButtonRelease(event);
+				break;
+
 			case ClientMessage:
 				win = FindWindow(event.xclient.window);
 				if(win && event.xclient.data.l[0] == win->_WMDeleteMessage)
@@ -503,6 +538,12 @@ int GLWindow::RunMessageLoop()
 				if(win)
 					win->HandleXKeyPress(event);
 				break;
+
+			case MotionNotify:
+				// The mouse has been moved
+				win = FindWindow(event.xmotion.window);
+				if(win)
+					win->HandleXMotionNotify(event);
 			}
 		}		
 	}
