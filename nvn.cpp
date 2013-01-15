@@ -34,7 +34,8 @@ int main(int argc, char* argv[])
 	char c;
 	int width = 800;
 	int height = 600;
-	char filename[256], varname[256];
+	char filename[256], varname[16][256];
+  int nvars;
 	int quit = 0;
 	nc_type vartype;
 	int ncid, varid, ndims, dimid[NC_MAX_DIMS];
@@ -45,8 +46,13 @@ int main(int argc, char* argv[])
 	void* buf = 0;
 	int typesize = 0;
 	MPI_Offset slabstart[NC_MAX_DIMS], slabcount[NC_MAX_DIMS];
+  const char* str, *str2;
+  int pos = 0;
+  int commsize, rank;
 
 	MPI_Init(&argc, &argv);
+  MPI_Comm_size(MPI_COMM_WORLD, &commsize);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
 	for(i = 0; i < NC_MAX_DIMS; i++)
 	{
@@ -80,7 +86,35 @@ int main(int argc, char* argv[])
 
 		case 'v':
 			// Variable name
-			strcpy(varname, optarg);
+      printf("parsing vars '%s'...\n", optarg);
+      if(strchr(optarg, ','))
+      {
+        nvars = 0;
+        str = optarg;
+        while(str && strlen(str) > 0)
+        {
+          str2 = strchr(str, ',');
+          if(str2)
+          {
+            pos = str2 - str;
+            strncpy(varname[nvars++], str, pos);
+            printf("found var %s\n", varname[nvars-1]);
+            str += pos + 1;
+          }
+          else
+          {
+            strcpy(varname[nvars++], str);
+            printf("found var %s\n", varname[nvars-1]);
+            str = 0;
+          }
+        }
+      }
+      else
+      {
+        strcpy(varname[0], optarg);
+        nvars = 1;
+      }
+        
 			break;
 
 		case 'w':
@@ -94,6 +128,14 @@ int main(int argc, char* argv[])
 		}
 	}
 
+  printf("done with options\n");
+
+  if(nvars != commsize)
+  {
+    fprintf(stderr, "nvars=%d != commsize=%d\n", nvars, commsize);
+    exit(1);
+  }
+
 	ncresult = ncmpi_open(MPI_COMM_WORLD, filename, NC_NOWRITE, MPI_INFO_NULL, &ncid);
 	if(NC_NOERR != ncresult)
 	{
@@ -103,12 +145,12 @@ int main(int argc, char* argv[])
 		exit(1);
 	}
 
-	ncresult = ncmpi_inq_varid(ncid, varname, &varid);
+	ncresult = ncmpi_inq_varid(ncid, varname[rank], &varid);
 	if(NC_NOERR != ncresult)
 	{
 		fprintf(stderr, "Cannot find a variable named '%s' in '%s'.\n"
 						"  Error message: %s\n",
-						varname, filename, ncmpi_strerror(ncresult));
+						varname[rank], filename, ncmpi_strerror(ncresult));
 		exit(1);
 	}
 
