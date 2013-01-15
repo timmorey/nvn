@@ -7,6 +7,11 @@
 
 #include <libxml/tree.h>
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 /**
   The VariantType enum gives the supported variant types, which are aligned
   with the NetCDF nc_type enum.
@@ -53,5 +58,9 @@ int VariantInRange(Variant v, Variant min, Variant max);
 int VariantIsNearlyEqual(Variant v1, Variant v2);
 
 double VariantValueAsDouble(Variant v);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -4,6 +4,8 @@
 
 #include "color-ramp.h"
 #include "layer.hpp"
+#include "nvn.h"
+#include "variant.h"
 
 #define MPICH_SKIP_MPICXX 1
 #include <mpi.h>
@@ -21,25 +23,18 @@ Layer::Layer(int width, int height, MPI_Datatype datatype, void* data)
 		_Ramp(DefaultColorRamp),
 		_TexBitmap(0)
 {
-	double min = DBL_MAX;
-	double max = DBL_MIN;
+	Variant value;
+	_MinVal = MaxVariant(datatype);
+	_MaxVal = MinVariant(datatype);
 	for(int x = 0; x < _Width; x++)
 	{
 		for(int y = 0; y < _Height; y++)
 		{
-			double pivot = ((double*)_Data)[y * _Width + x];
-			if(pivot < min) min = pivot;
-			if(pivot > max) max = pivot;
+			this->GetValueAsVariant(x, y, &value);
+			if(0 > VariantCompare(value, _MinVal)) _MinVal = value;
+			if(0 < VariantCompare(value, _MaxVal)) _MaxVal = value;
 		}
 	}
-
-	printf("width=%d, height=%d, min=%f, max=%f\n", _Width, _Height, min, max);
-
-	_MinVal.Type = VariantTypeDouble;
-	_MinVal.Value.DoubleVal = min;
-
-	_MaxVal.Type = VariantTypeDouble;
-	_MaxVal.Value.DoubleVal = max;
 }
 
 Layer::~Layer()
@@ -49,6 +44,39 @@ Layer::~Layer()
 		free(_TexBitmap);
 		_TexBitmap = 0;
 	}
+}
+
+int Layer::GetValueAsVariant(int x, int y, Variant* value)
+{
+	int retval = NVN_NOERR;
+
+	if(value)
+	{
+		int i = y * _Width + x;
+		switch(_DataType)
+		{
+		case MPI_FLOAT:
+			value->Type = VariantTypeFloat;
+			value->Value.FloatVal = ((float*)_Data)[i];
+			break;
+
+		case MPI_DOUBLE:
+			value->Type = VariantTypeDouble;
+			value->Value.DoubleVal = ((double*)_Data)[i];
+			break;
+
+		default:
+			retval = NVN_EINVTYPE;
+			fprintf(stderr, "Layer::GetValueAsVariant - Data type not supported.\n");
+			break;
+		}
+	}
+	else
+	{
+		retval = NVN_EINVARGS;
+	}
+
+	return retval;
 }
 
 int Layer::Render()
@@ -93,12 +121,11 @@ int Layer::Render()
 
 		_TexBitmap = (char*)malloc(_TexWidth * _TexHeight * 4);
 		Variant value;
-		value.Type = VariantTypeDouble;
 		for(int x = 0; x < _Width; x++)
 		{
 			for(int y = 0; y < _Height; y++)
 			{
-				value.Value.DoubleVal = ((double*)_Data)[y * _Width + x];
+				GetValueAsVariant(x, y, &value);
 				((int*)_TexBitmap)[y * _TexWidth + x] = 
 					GetColor(_Ramp, value, _MinVal, _MaxVal);
 			}

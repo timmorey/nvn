@@ -26,6 +26,7 @@ public:
 public:
 	int GetWidth() const { return _Width; }
 	int GetHeight() const { return _Height; }
+	int GetValueAsVariant(int x, int y, Variant* value);
 
 protected:
 	int _Width;

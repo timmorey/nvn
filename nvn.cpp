@@ -27,6 +27,8 @@
  */
 int ParseHyperslab(const char* str, MPI_Offset slab[]);
 
+MPI_Datatype NCTypeToMPI(nc_type type);
+
 int main(int argc, char* argv[])
 {
 	char c;
@@ -40,9 +42,8 @@ int main(int argc, char* argv[])
 	MPI_Offset varlen, dimlen[NC_MAX_DIMS];
 	int ncresult;
 	int i;
-	double* buf = 0;
-	double min, max;
-	int row, col;
+	void* buf = 0;
+	int typesize = 0;
 	MPI_Offset slabstart[NC_MAX_DIMS], slabcount[NC_MAX_DIMS];
 
 	MPI_Init(&argc, &argv);
@@ -112,11 +113,6 @@ int main(int argc, char* argv[])
 	}
 
 	ncresult = ncmpi_inq_var(ncid, varid, 0, &vartype, &ndims, dimid, 0);
-	if(NC_DOUBLE != vartype)
-	{
-		fprintf(stderr, "Invalid variable type.  Only double is currently supported.");
-		exit(1);
-	}
 
 	varlen = 1;
 	slabdims = 0;
@@ -145,8 +141,11 @@ int main(int argc, char* argv[])
 		exit(1);
 	}
 
-	buf = (double*)malloc(varlen * sizeof(double));
-	ncresult = ncmpi_get_vara_double_all(ncid, varid, slabstart, slabcount, buf);
+	MPI_Datatype mpitype = NCTypeToMPI(vartype);
+	MPI_Type_size(mpitype, &typesize);
+	buf = malloc(varlen * typesize);
+	ncresult = ncmpi_get_vara_all(ncid, varid, slabstart, slabcount, 
+																buf, varlen, mpitype);
 	if(NC_NOERR != ncresult)
 	{
 		fprintf(stderr, "Failed to read data values.\n"
@@ -155,13 +154,45 @@ int main(int argc, char* argv[])
 	}
 
 	GLWindow win("blah", 100, 100, 640, 480, false);
-	win.AddLayer(new Layer(width, height, MPI_DOUBLE, buf));
+	win.AddLayer(new Layer(width, height, mpitype, buf));
 	
 	while(win.IsActive())
 		sleep(1);
 
 	MPI_Finalize();
 	return 0;
+}
+
+
+MPI_Datatype NCTypeToMPI(nc_type type)
+{
+	switch(type)
+	{
+	case NC_BYTE:
+	case NC_CHAR:
+		return MPI_CHAR;
+	case NC_SHORT:
+		return MPI_SHORT;
+	case NC_INT:
+		return MPI_INT;
+	case NC_FLOAT:
+		return MPI_FLOAT;
+	case NC_DOUBLE:
+		return MPI_DOUBLE;
+	case NC_UBYTE:
+		return MPI_BYTE;
+	case NC_USHORT:
+		return MPI_UNSIGNED_SHORT;
+	case NC_UINT:
+		return MPI_UNSIGNED;
+	case NC_INT64:
+		return MPI_LONG;
+	case NC_UINT64:
+		return MPI_UNSIGNED_LONG;
+	default:
+		fprintf(stderr, "NCTypeToMPI - Failed to map nc_type to MPI_Datatype\n");
+		return MPI_BYTE;
+	}
 }
 
 int ParseHyperslab(const char* str, MPI_Offset slab[])
