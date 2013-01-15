@@ -333,8 +333,25 @@ int GLWindow::GetMousePos(int* x, int* y) const
 	return retval;
 }
 
+int GLWindow::GetMousePosInModel(float* x, float* y) const
+{
+  int retval = NVN_NOERR;
+
+  int pixx, pixy;
+  float scale;
+
+  scale = GetPixelsPerModelUnit();
+  retval = GetMousePos(&pixx, &pixy);
+
+  *x = _CenterX + (pixx - _Width / 2.0f) / scale;
+  *y = _CenterY + (pixy - _Height / 2.0f) / scale;
+
+  return retval;
+}
+
 int GLWindow::HandleXButtonPress(XEvent event)
 {
+  float x1, y1, x2, y2;
 	switch(event.xbutton.button)
 	{
 	case Button1:
@@ -343,12 +360,20 @@ int GLWindow::HandleXButtonPress(XEvent event)
 		break;
 
 	case Button4:
+    GetMousePosInModel(&x1, &y1);
 		_ZoomLevel *= _ZoomFactor;
+    GetMousePosInModel(&x2, &y2);
+    _CenterX -= x2 - x1;
+    _CenterY += y2 - y1;
 		this->AsyncRefresh();
 		break;
 
 	case Button5:
+    GetMousePosInModel(&x1, &y1);
 		_ZoomLevel /= _ZoomFactor;
+    GetMousePosInModel(&x2, &y2);
+    _CenterX -= x2 - x1;
+    _CenterY += y2 - y1;    
 		this->AsyncRefresh();
 		break;
 	}

@@ -44,6 +44,7 @@ protected:
 	int CreateWindow();
 	int DestroyWindow();
 	int GetMousePos(int* x, int* y) const;
+  int GetMousePosInModel(float *x, float *y) const;
 	int RenderModel();
 
 protected:
