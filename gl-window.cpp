@@ -8,6 +8,7 @@
 #include "model.hpp"
 #include "nvn.h"
 
+#include <math.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -68,7 +69,12 @@ GLWindow::GLWindow(const char* title, int x, int y, int width, int height,
 		_CameraX(0.0f),
 		_CameraY(0.0f),
 		_CameraZ(0.0f),
-		_LeftMouseDown(false)
+		_CameraRX(0.0f),
+		_CameraRY(0.0f),
+		_CtrlDown(false),
+		_LeftMouseDown(false),
+		_PrevX(-1),
+		_PrevY(-1)
 {
 	if(! _UIThreadActive)
 	{
@@ -182,6 +188,8 @@ int GLWindow::Refresh()
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
 		gluPerspective(60.0, (float)_Width / (float)_Height, 1.0, 1024.0);
+		glRotatef(_CameraRX, 1.0f, 0.0f, 0.0f);
+		glRotatef(_CameraRY, 0.0f, 1.0f, 0.0f);
 		glTranslatef(_CameraX, _CameraY, _CameraZ);
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -357,25 +365,52 @@ int GLWindow::HandleXExpose(XEvent event)
 
 int GLWindow::HandleXKeyPress(XEvent event)
 {
+	float speed = 10.0f;
+	float deg2rad = 0.0174532925f;
 	KeySym key = XLookupKeysym(&event.xkey, 0);
-	if(XK_Left == key)
-		_CameraX -= 1.0f;
-	else if(XK_Right == key)
-		_CameraX += 1.0f;
-	else if(XK_Up == key)
-		_CameraY += 1.0f;
-	else if(XK_Down == key)
-		_CameraY -= 1.0f;
+	if(XK_a == key)
+	{
+		_CameraX += speed * cos(_CameraRY * deg2rad);
+		_CameraZ += speed * sin(_CameraRY * deg2rad);
+	}
+	else if(XK_d == key)
+	{
+		_CameraX -= speed * cos(_CameraRY * deg2rad);
+		_CameraZ -= speed * sin(_CameraRY * deg2rad);
+	}
+	else if(XK_w == key)
+	{
+		_CameraX -= speed * sin(_CameraRY * deg2rad);
+		_CameraY += speed * sin(_CameraRX * deg2rad);
+		_CameraZ += speed * cos(_CameraRY * deg2rad) * cos(_CameraRX * deg2rad);
+	}
+	else if(XK_s == key)
+	{
+		_CameraX += speed * sin(_CameraRY * deg2rad);
+		_CameraY -= speed * sin(_CameraRX * deg2rad);
+		_CameraZ -= speed * cos(_CameraRY * deg2rad) * cos(_CameraRX * deg2rad);
+	}
+	else if(XK_Control_L == key)
+	{
+		_CtrlDown = true;
+	}
 
 	this->Refresh();
 }
 
+int GLWindow::HandleXKeyRelease(XEvent event)
+{
+	KeySym key = XLookupKeysym(&event.xkey, 0);
+	if(XK_Control_L == key)
+		_CtrlDown = false;
+}
+
 int GLWindow::HandleXMotionNotify(XEvent event)
 {
-	if(_LeftMouseDown)
+	if((_CtrlDown || _LeftMouseDown) && _PrevX > 0 && _PrevY > 0)
 	{
-		_CameraX -= (float)(_PrevX - event.xmotion.x);
-		_CameraY += (float)(_PrevY - event.xmotion.y);
+		_CameraRY -= (float)(_PrevX - event.xmotion.x);
+		_CameraRX += (float)(_PrevY - event.xmotion.y);
 		this->Refresh();
 	}
 
@@ -499,14 +534,12 @@ int GLWindow::RunMessageLoop()
 			switch(event.type)
 			{
 			case ButtonPress:
-				// A mouse button has been pressed (or the wheel has moved
 				win = FindWindow(event.xbutton.window);
 				if(win)
 					win->HandleXButtonPress(event);
 				break;
 
 			case ButtonRelease:
-				// A mouse button has been pressed (or the wheel has moved
 				win = FindWindow(event.xbutton.window);
 				if(win)
 					win->HandleXButtonRelease(event);
@@ -519,28 +552,30 @@ int GLWindow::RunMessageLoop()
 				break;
 
 			case ConfigureNotify:
-				// The window geometry has changed
 				win = FindWindow(event.xconfigure.window);
 				if(win)
 					win->HandleXConfigureNotify(event);
 				break;
 
 			case Expose:
-				// The window contents needs to be re-drawn
 				win = FindWindow(event.xexpose.window);
 				if(win)
 					win->HandleXExpose(event);
 				break;
 
 			case KeyPress:
-				// A keyboard key has been pressed
 				win = FindWindow(event.xkey.window);
 				if(win)
 					win->HandleXKeyPress(event);
 				break;
 
+			case KeyRelease:
+				win = FindWindow(event.xkey.window);
+				if(win)
+					win->HandleXKeyRelease(event);
+				break;
+
 			case MotionNotify:
-				// The mouse has been moved
 				win = FindWindow(event.xmotion.window);
 				if(win)
 					win->HandleXMotionNotify(event);

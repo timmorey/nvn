@@ -48,6 +48,7 @@ protected:
 	int HandleXConfigureNotify(XEvent event);
 	int HandleXExpose(XEvent event);
 	int HandleXKeyPress(XEvent event);
+	int HandleXKeyRelease(XEvent event);
 	int HandleXMotionNotify(XEvent event);
 
 protected:
@@ -59,7 +60,8 @@ protected:
 	Atom _WMDeleteMessage;
 	Model _Model;
 	float _CameraX, _CameraY, _CameraZ;
-	bool _LeftMouseDown;
+	float _CameraRX, _CameraRY;
+	bool _CtrlDown, _LeftMouseDown;
 	int _PrevX, _PrevY;
 
 protected:
