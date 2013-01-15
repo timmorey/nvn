@@ -14,6 +14,10 @@ public:
 	~Model() {}
 
 public:
+	int GetWidth() const;
+	int GetHeight() const;
+
+public:
 	Layer* TheLayer;
 };
 

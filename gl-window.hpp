@@ -29,10 +29,11 @@ public:
 public:
 	int AddLayer(Layer* layer);
 	int CloseWindow();
-	int Refresh();
+	int AsyncRefresh();
 
 public:
 	bool IsActive() const;
+	float GetPixelsPerModelUnit() const;
 	int GetX() const { return _X; }
 	int GetY() const { return _Y; }
 	int GetWidth() const { return _Width; }
@@ -42,7 +43,10 @@ public:
 protected:
 	int CreateWindow();
 	int DestroyWindow();
+	int GetMousePos(int* x, int* y) const;
+	int RenderModel();
 
+protected:
 	int HandleXButtonPress(XEvent event);
 	int HandleXButtonRelease(XEvent event);
 	int HandleXConfigureNotify(XEvent event);
@@ -59,10 +63,10 @@ protected:
 	GLXContext _GLXContext;
 	Atom _WMDeleteMessage;
 	Model _Model;
-	float _CameraX, _CameraY, _CameraZ;
-	float _CameraRX, _CameraRY;
-	bool _CtrlDown, _LeftMouseDown;
-	int _PrevX, _PrevY;
+	bool _LeftMouseDown;
+	int _MouseDownX, _MouseDownY;
+	int _CenterX, _CenterY;
+	float _ZoomLevel, _ZoomFactor;
 
 protected:
 	static std::list<GLWindow*> _Windows;

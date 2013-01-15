@@ -66,15 +66,10 @@ GLWindow::GLWindow(const char* title, int x, int y, int width, int height,
 		_Width(width),
 		_Height(height),
 		_Borderless(borderless),
-		_CameraX(0.0f),
-		_CameraY(0.0f),
-		_CameraZ(0.0f),
-		_CameraRX(0.0f),
-		_CameraRY(0.0f),
-		_CtrlDown(false),
 		_LeftMouseDown(false),
-		_PrevX(-1),
-		_PrevY(-1)
+		_MouseDownX(-1), _MouseDownY(-1),
+		_CenterX(0), _CenterY(0),
+		_ZoomLevel(1.0), _ZoomFactor(1.1)
 {
 	if(! _UIThreadActive)
 	{
@@ -132,10 +127,10 @@ GLWindow::~GLWindow()
 int GLWindow::AddLayer(Layer* layer)
 {
 	_Model.TheLayer = layer;
-	_CameraX = 0.0f;
-	_CameraY = 0.0f;
-	_CameraZ = -1000.0f;
-	this->Refresh();
+	_CenterX = _Model.GetWidth() / 2.0f;
+	_CenterY = _Model.GetHeight() / 2.0f;
+	_ZoomLevel = 1.0f;
+	this->AsyncRefresh();
 }
 
 int GLWindow::CloseWindow()
@@ -161,6 +156,21 @@ int GLWindow::CloseWindow()
 	}
 }
 
+float GLWindow::GetPixelsPerModelUnit() const
+{
+	float scale = 0.0f;  // pixels per model unit
+
+	float viewAspect = (float)_Width / (float)_Height;
+	float dataAspect = (float)_Model.GetWidth() / (float)_Model.GetHeight();
+
+	if(viewAspect > dataAspect)
+		scale = (float)_Height / (_Model.GetHeight() / _ZoomLevel);
+	else
+		scale = (float)_Width / (_Model.GetWidth() / _ZoomLevel);
+	
+	return scale;
+}
+
 bool GLWindow::IsActive() const
 {
 	bool retval = false;
@@ -178,33 +188,14 @@ bool GLWindow::IsActive() const
 	return retval;
 }
 
-int GLWindow::Refresh()
+int GLWindow::AsyncRefresh()
 {
 	int retval = NVN_NOERR;
 
-	if(pthread_equal(_UIThread, pthread_self()))
-	{
-		glViewport(0, 0, _Width, _Height);
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		gluPerspective(60.0, (float)_Width / (float)_Height, 1.0, 1024.0);
-		glRotatef(_CameraRX, 1.0f, 0.0f, 0.0f);
-		glRotatef(_CameraRY, 0.0f, 1.0f, 0.0f);
-		glTranslatef(_CameraX, _CameraY, _CameraZ);
-
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		if(_Model.TheLayer)
-			_Model.TheLayer->Render();
-		glXSwapBuffers(_Display, _XWindow);
-	}
-	else
-	{
-		Message msg;
-
-		InitMessage(&msg, "Refresh");
-		msg.Arguments[0] = this;
-		Push(&_UIQueue, msg);
-	}
+	Message msg;
+	InitMessage(&msg, "AsyncRefresh");
+	msg.Arguments[0] = this;
+	Push(&_UIQueue, msg);
 
 	return retval;
 }
@@ -320,22 +311,45 @@ int GLWindow::DestroyWindow()
 	_Windows.remove(this);
 }
 
+int GLWindow::GetMousePos(int* x, int* y) const
+{
+	int retval = NVN_NOERR;
+
+	Window root, child;
+	int rootx, rooty, winx, winy;
+	unsigned int mask;
+	if(XQueryPointer(_Display, _XWindow, &root, &child,
+									 &rootx, &rooty, &winx, &winy, &mask))
+	{
+		*x = winx;
+		*y = winy;
+	}
+	else
+	{
+		retval = NVN_EXWINFAIL;
+		fprintf(stderr, "XQueryPointer returned false.\n");
+	}
+
+	return retval;
+}
+
 int GLWindow::HandleXButtonPress(XEvent event)
 {
 	switch(event.xbutton.button)
 	{
 	case Button1:
 		_LeftMouseDown = true;
+		this->GetMousePos(&_MouseDownX, &_MouseDownY);
 		break;
 
 	case Button4:
-		_CameraZ += 10.0f;
-		this->Refresh();
+		_ZoomLevel *= _ZoomFactor;
+		this->AsyncRefresh();
 		break;
 
 	case Button5:
-		_CameraZ -= 10.0f;
-		this->Refresh();
+		_ZoomLevel /= _ZoomFactor;
+		this->AsyncRefresh();
 		break;
 	}
 }
@@ -345,7 +359,16 @@ int GLWindow::HandleXButtonRelease(XEvent event)
 	switch(event.xbutton.button)
 	{
 	case Button1:
-		_LeftMouseDown = false;
+		if(_LeftMouseDown)
+		{
+			int curx, cury;
+			float scale = this->GetPixelsPerModelUnit();
+			this->GetMousePos(&curx, &cury);
+
+			_CenterX += ((_MouseDownX - curx) / scale);
+			_CenterY -= ((_MouseDownY - cury) / scale);
+			_LeftMouseDown = false;
+		}
 		break;
 	}
 }
@@ -360,62 +383,61 @@ int GLWindow::HandleXConfigureNotify(XEvent event)
 
 int GLWindow::HandleXExpose(XEvent event)
 {
-	this->Refresh();
+	this->RenderModel();
 }
 
 int GLWindow::HandleXKeyPress(XEvent event)
 {
-	float speed = 10.0f;
-	float deg2rad = 0.0174532925f;
-	KeySym key = XLookupKeysym(&event.xkey, 0);
-	if(XK_a == key)
-	{
-		_CameraX += speed * cos(_CameraRY * deg2rad);
-		_CameraZ += speed * sin(_CameraRY * deg2rad);
-	}
-	else if(XK_d == key)
-	{
-		_CameraX -= speed * cos(_CameraRY * deg2rad);
-		_CameraZ -= speed * sin(_CameraRY * deg2rad);
-	}
-	else if(XK_w == key)
-	{
-		_CameraX -= speed * sin(_CameraRY * deg2rad);
-		_CameraY += speed * sin(_CameraRX * deg2rad);
-		_CameraZ += speed * cos(_CameraRY * deg2rad) * cos(_CameraRX * deg2rad);
-	}
-	else if(XK_s == key)
-	{
-		_CameraX += speed * sin(_CameraRY * deg2rad);
-		_CameraY -= speed * sin(_CameraRX * deg2rad);
-		_CameraZ -= speed * cos(_CameraRY * deg2rad) * cos(_CameraRX * deg2rad);
-	}
-	else if(XK_Control_L == key)
-	{
-		_CtrlDown = true;
-	}
-
-	this->Refresh();
+	int retval = NVN_NOERR;
+	return retval;
 }
 
 int GLWindow::HandleXKeyRelease(XEvent event)
 {
-	KeySym key = XLookupKeysym(&event.xkey, 0);
-	if(XK_Control_L == key)
-		_CtrlDown = false;
+	int retval = NVN_NOERR;
+	return retval;
 }
 
 int GLWindow::HandleXMotionNotify(XEvent event)
 {
-	if((_CtrlDown || _LeftMouseDown) && _PrevX > 0 && _PrevY > 0)
+	if(_LeftMouseDown)
+		this->AsyncRefresh();
+}
+
+int GLWindow::RenderModel()
+{
+	glViewport(0, 0, _Width, _Height);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	int curx, cury;
+	float centerx, centery;
+	float scale = this->GetPixelsPerModelUnit();
+	this->GetMousePos(&curx, &cury);
+
+	if(_LeftMouseDown)
 	{
-		_CameraRY -= (float)(_PrevX - event.xmotion.x);
-		_CameraRX += (float)(_PrevY - event.xmotion.y);
-		this->Refresh();
+		centerx = _CenterX + ((_MouseDownX - curx) / scale);
+		centery = _CenterY - ((_MouseDownY - cury) / scale);
+	}
+	else
+	{
+		centerx = _CenterX;
+		centery = _CenterY;
 	}
 
-	_PrevX = event.xmotion.x;
-	_PrevY = event.xmotion.y;
+	float xmin = centerx - (_Width / 2.0f) / scale;
+	float xmax = centerx + (_Width / 2.0f) / scale;
+	float ymin = centery - (_Height / 2.0f) / scale;
+	float ymax = centery + (_Height / 2.0f) / scale;
+	glOrtho(xmin, xmax, ymin, ymax, -1.0f, 1.0f);
+	
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	if(_Model.TheLayer)
+		_Model.TheLayer->Render();
+	glXSwapBuffers(_Display, _XWindow);
 }
 
 /******************************************************************************
@@ -513,9 +535,9 @@ int GLWindow::RunMessageLoop()
 					if(msg.Handled)
 						*msg.Handled = 1;
 				}
-				else if(0 == strcmp("Refresh", msg.Message))
+				else if(0 == strcmp("AsyncRefresh", msg.Message))
 				{
-					ret = ((GLWindow*)msg.Arguments[0])->Refresh();
+					ret = ((GLWindow*)msg.Arguments[0])->RenderModel();
 
 					if(msg.Handled)
 						*msg.Handled = 1;

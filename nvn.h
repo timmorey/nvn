@@ -17,4 +17,6 @@
 #define NVN_EGLXFAIL       4
 #define NVN_EXWINFAIL      5
 
+#define DEG2RADF 0.0174532925f
+
 #endif
