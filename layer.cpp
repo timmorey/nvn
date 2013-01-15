@@ -81,33 +81,6 @@ int Layer::GetValueAsVariant(int x, int y, Variant* value)
 
 int Layer::Render()
 {
-	// Render Method 1: Render each grid point as a colored square:
-	//
-
-	// glBegin(GL_QUADS);
-	// {
-	// 	Variant value;
-	// 	value.Type = VariantTypeDouble;
-	// 	for(int x = 0; x < _Width; x++)
-	// 	{
-	// 		for(int y = 0; y < _Height; y++)
-	// 		{
-	// 			value.Value.DoubleVal = ((double*)_Data)[y * _Width + x];
-	// 			int color = GetColor(_Ramp, value, _MinVal, _MaxVal);
-	// 			glColor4ub(GetR(color), GetG(color), GetB(color), GetA(color));
-	// 			glVertex3f((float)x, (float)y, 0.0);
-	// 			glVertex3f((float)x + 1.0, (float)y, 0.0);
-	// 			glVertex3f((float)x + 1.0, (float)y + 1.0, 0.0);
-	// 			glVertex3f((float)x, (float)y + 1.0, 0.0);
-	// 		}
-	// 	}
-	// }
-	// glEnd();
-
-
-	// Render Method 2: Render the grid into a texture and then draw it onto a
-	//                  single rectangle.
-
 	if(0 == _TexBitmap)
 	{
 		_TexWidth = 1;
