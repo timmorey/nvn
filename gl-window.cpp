@@ -69,7 +69,8 @@ GLWindow::GLWindow(const char* title, int x, int y, int width, int height,
 		_LeftMouseDown(false),
 		_MouseDownX(-1), _MouseDownY(-1),
 		_CenterX(0), _CenterY(0),
-		_ZoomLevel(1.0), _ZoomFactor(1.1)
+		_ZoomLevel(1.0), _ZoomFactor(1.1),
+    _Dirty(true)
 {
 	if(! _UIThreadActive)
 	{
@@ -130,7 +131,7 @@ int GLWindow::AddLayer(Layer* layer)
 	_CenterX = _Model.GetWidth() / 2.0f;
 	_CenterY = _Model.GetHeight() / 2.0f;
 	_ZoomLevel = 1.0f;
-	this->AsyncRefresh();
+  _Dirty = true;
 }
 
 int GLWindow::CloseWindow()
@@ -191,11 +192,8 @@ bool GLWindow::IsActive() const
 int GLWindow::AsyncRefresh()
 {
 	int retval = NVN_NOERR;
-
-	Message msg;
-	InitMessage(&msg, "AsyncRefresh");
-	msg.Arguments[0] = this;
-	Push(&_UIQueue, msg);
+  
+  _Dirty = true;
 
 	return retval;
 }
@@ -356,7 +354,9 @@ int GLWindow::HandleXButtonPress(XEvent event)
 	{
 	case Button1:
 		_LeftMouseDown = true;
-		this->GetMousePos(&_MouseDownX, &_MouseDownY);
+		//this->GetMousePos(&_MouseDownX, &_MouseDownY);
+    _MouseDownX = event.xbutton.x;
+    _MouseDownY = event.xbutton.y;
 		break;
 
 	case Button4:
@@ -390,8 +390,8 @@ int GLWindow::HandleXButtonRelease(XEvent event)
 			float scale = this->GetPixelsPerModelUnit();
 			this->GetMousePos(&curx, &cury);
 
-			_CenterX += ((_MouseDownX - curx) / scale);
-			_CenterY -= ((_MouseDownY - cury) / scale);
+			_CenterX += ((_MouseDownX - event.xbutton.x) / scale);
+			_CenterY -= ((_MouseDownY - event.xbutton.y) / scale);
 			_LeftMouseDown = false;
 		}
 		break;
@@ -408,7 +408,7 @@ int GLWindow::HandleXConfigureNotify(XEvent event)
 
 int GLWindow::HandleXExpose(XEvent event)
 {
-	this->RenderModel();
+  this->AsyncRefresh();
 }
 
 int GLWindow::HandleXKeyPress(XEvent event)
@@ -436,13 +436,13 @@ int GLWindow::RenderModel()
 	
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	int curx, cury;
 	float centerx, centery;
 	float scale = this->GetPixelsPerModelUnit();
-	this->GetMousePos(&curx, &cury);
 
 	if(_LeftMouseDown)
 	{
+    int curx, cury;
+    this->GetMousePos(&curx, &cury);
 		centerx = _CenterX + ((_MouseDownX - curx) / scale);
 		centery = _CenterY - ((_MouseDownY - cury) / scale);
 	}
@@ -534,14 +534,75 @@ int GLWindow::RunMessageLoop()
 	Message msg;
 	int valid;
 	GLWindow* win;
+  std::list<GLWindow*>::iterator iter;
+  double renderStart;
+  double renderElapsed = 0.0;
+  int renderCount = 0;
 
 	_UIThreadActive = true;
 
 	while(_KeepUIThreadActive)
 	{
-		if(_UIQueue.Size > 0) // Local messages get highest priority
-		{
-			Pop(&_UIQueue, &msg, &valid);
+    if(XPending(_Display)) // Give X11 messages highest priority, and process
+		{                      // all if there are any, to avoid a long queue.
+      while(XPending(_Display))
+      {
+        XNextEvent(_Display, &event);
+        switch(event.type)
+        {
+        case ButtonPress:
+          win = FindWindow(event.xbutton.window);
+          if(win)
+            win->HandleXButtonPress(event);
+          break;
+          
+        case ButtonRelease:
+          win = FindWindow(event.xbutton.window);
+          if(win)
+            win->HandleXButtonRelease(event);
+          break;
+          
+        case ClientMessage:
+          win = FindWindow(event.xclient.window);
+          if(win && event.xclient.data.l[0] == win->_WMDeleteMessage)
+            win->DestroyWindow();
+          break;
+          
+        case ConfigureNotify:
+          win = FindWindow(event.xconfigure.window);
+          if(win)
+            win->HandleXConfigureNotify(event);
+          break;
+          
+        case Expose:
+          win = FindWindow(event.xexpose.window);
+          if(win)
+            win->HandleXExpose(event);
+          break;
+          
+        case KeyPress:
+          win = FindWindow(event.xkey.window);
+          if(win)
+            win->HandleXKeyPress(event);
+          break;
+          
+        case KeyRelease:
+          win = FindWindow(event.xkey.window);
+          if(win)
+            win->HandleXKeyRelease(event);
+          break;
+          
+        case MotionNotify:
+          win = FindWindow(event.xmotion.window);
+          if(win)
+            win->HandleXMotionNotify(event);
+          break;
+        }
+      }
+    }
+    else if(_UIQueue.Size > 0) // Local messages receive a lower priority
+    {
+      Pop(&_UIQueue, &msg, &valid);
 			if(valid)
 			{
 				int ret = NVN_NOERR;
@@ -560,13 +621,6 @@ int GLWindow::RunMessageLoop()
 					if(msg.Handled)
 						*msg.Handled = 1;
 				}
-				else if(0 == strcmp("AsyncRefresh", msg.Message))
-				{
-					ret = ((GLWindow*)msg.Arguments[0])->RenderModel();
-
-					if(msg.Handled)
-						*msg.Handled = 1;
-				}
 
         if(msg.Result)
           *((int*)msg.Result) = ret;
@@ -575,59 +629,28 @@ int GLWindow::RunMessageLoop()
 					DestroyArguments(msg);
 			}
 		}
-		else if(XPending(_Display)) // X11 messages get next highest priority
-		{
-			XNextEvent(_Display, &event);
-			switch(event.type)
-			{
-			case ButtonPress:
-				win = FindWindow(event.xbutton.window);
-				if(win)
-					win->HandleXButtonPress(event);
-				break;
+    else
+    {
+      for(iter = _Windows.begin(); iter != _Windows.end(); iter++)
+      {
+        if((*iter)->_Dirty)
+        {
+          renderStart = MPI_Wtime();
 
-			case ButtonRelease:
-				win = FindWindow(event.xbutton.window);
-				if(win)
-					win->HandleXButtonRelease(event);
-				break;
+          (*iter)->RenderModel();
+          (*iter)->_Dirty = false;
 
-			case ClientMessage:
-				win = FindWindow(event.xclient.window);
-				if(win && event.xclient.data.l[0] == win->_WMDeleteMessage)
-					win->DestroyWindow();
-				break;
-
-			case ConfigureNotify:
-				win = FindWindow(event.xconfigure.window);
-				if(win)
-					win->HandleXConfigureNotify(event);
-				break;
-
-			case Expose:
-				win = FindWindow(event.xexpose.window);
-				if(win)
-					win->HandleXExpose(event);
-				break;
-
-			case KeyPress:
-				win = FindWindow(event.xkey.window);
-				if(win)
-					win->HandleXKeyPress(event);
-				break;
-
-			case KeyRelease:
-				win = FindWindow(event.xkey.window);
-				if(win)
-					win->HandleXKeyRelease(event);
-				break;
-
-			case MotionNotify:
-				win = FindWindow(event.xmotion.window);
-				if(win)
-					win->HandleXMotionNotify(event);
-			}
-		}		
+          renderElapsed += MPI_Wtime() - renderStart;
+          renderCount ++;
+          if(renderCount >= 100)
+          {
+            printf("Average render time: %f s\n", renderElapsed / renderCount);
+            renderElapsed = 0.0;
+            renderCount = 0;
+          }
+        }
+      }
+    }
 	}
 
 	_UIThreadActive = false;

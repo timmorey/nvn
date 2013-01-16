@@ -17,6 +17,8 @@
 #define NVN_EGLXFAIL       4
 #define NVN_EXWINFAIL      5
 #define NVN_EINVTYPE       6
+#define NVN_EQFULL         7
+#define NVN_ENOTUNIQUE     8
 
 #define DEG2RADF 0.0174532925f
 

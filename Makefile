@@ -6,7 +6,7 @@
 
 CC=mpicc
 CXX=mpicc
-LD=mpicc
+LD=mpicxx
 
 INCLUDES = -I$(PNETCDF_INC) -I/usr/include/libxml2
 CFLAGS += -g $(INCLUDES)

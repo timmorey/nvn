@@ -34,6 +34,7 @@ typedef struct
 {
   Message Messages[QUEUE_SIZE];
   int Capacity;
+  int Front;
   int Size;
   pthread_mutex_t Mutex;
 } CommunicationQueue;
@@ -47,6 +48,12 @@ int DestroyArguments(Message msg);
   @return An nvn error code indicating if the operation was successful.
 */
 int DestroyQueue(CommunicationQueue queue);
+
+/**
+   Two messages are said to be equal if they have equal names (string compare)
+   and equal arguments (pointer compare).
+ */
+int EqualMessagesP(Message m1, Message m2);
 
 /**
   @return An nvn error code indicating if the operation was successful.
@@ -73,6 +80,10 @@ int Pop(CommunicationQueue* queue, Message* msg, int* valid);
   @return An nvn error code indicating if the operation was successful.
 */
 int Push(CommunicationQueue* queue, Message msg);
+
+int PushIfUnique(CommunicationQueue* queue, Message msg);
+
+int QueueContainsP(CommunicationQueue* queue, Message msg);
 
 #ifdef __cplusplus
 }

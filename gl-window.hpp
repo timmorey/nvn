@@ -68,6 +68,7 @@ protected:
 	int _MouseDownX, _MouseDownY;
 	int _CenterX, _CenterY;
 	float _ZoomLevel, _ZoomFactor;
+  bool _Dirty;
 
 protected:
 	static std::list<GLWindow*> _Windows;

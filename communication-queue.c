@@ -4,6 +4,7 @@
   This file implements the interface defined in communication-queue.h.
 */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -41,6 +42,19 @@ int DestroyQueue(CommunicationQueue queue)
   return retval;
 }
 
+int EqualMessagesP(Message m1, Message m2)
+{
+  int equal = 0;
+  int i;
+
+  equal = 0 == strcmp(m1.Message, m2.Message);
+  
+  for(i = 0; equal && i < ARGS_SIZE; i++)
+    equal = m1.Arguments[i] == m2.Arguments[i];
+
+  return equal;
+}
+
 int InitMessage(Message* msg, const char* text)
 {
   int retval = NVN_NOERR;
@@ -67,9 +81,10 @@ int InitQueue(CommunicationQueue* queue)
     int i = 0;
 
     queue->Capacity = QUEUE_SIZE;
+    queue->Front = 0;
     queue->Size = 0;
     for(i = 0; i < QUEUE_SIZE; i++)
-      InitMessage(&queue->Messages[i], "");
+      InitMessage(&queue->Messages[i], "INVALID");
 		pthread_mutex_init(&queue->Mutex, 0);
   }
   else
@@ -98,13 +113,12 @@ int Pop(CommunicationQueue* queue, Message* msg, int* valid)
 
 		  if(queue->Size > 0)
 		  {
-			  *msg = queue->Messages[0];
+			  *msg = queue->Messages[queue->Front];
         if(valid)
           *valid = 1;
 
-			  for(i = 1; i < queue->Size; i++)
-				  queue->Messages[i-1] = queue->Messages[i];
-			  queue->Size--;
+        queue->Size--;
+        queue->Front = (queue->Front + 1) % queue->Capacity;
 		  }
 
 			pthread_mutex_unlock(&queue->Mutex);
@@ -125,24 +139,101 @@ int Push(CommunicationQueue* queue, Message msg)
   if(queue)
   {
     int pushed = 0;
-    
-    while(!pushed)
+
+    if(queue->Size < queue->Capacity)
     {
-      while(queue->Size >= queue->Capacity)
-        pthread_yield();
+      pthread_mutex_lock(&queue->Mutex);
 
-			pthread_mutex_lock(&queue->Mutex);
-
-		  if(queue->Size < queue->Capacity)
-		  {
-			  queue->Messages[queue->Size] = msg;
+      if(queue->Size < queue->Capacity)
+      {
+        queue->Messages[(queue->Front + queue->Size) % queue->Capacity] = msg;
         queue->Size++;
         pushed = 1;
-		  }
+      }
 
 			pthread_mutex_unlock(&queue->Mutex);
+    }
+    
+    if(! pushed)
+    {
+      retval = NVN_EQFULL;
+      fprintf(stderr, "Queue full - '%s' message dropped.\n", msg.Message);
     }
   }
 
   return retval;
 }
+
+int PushIfUnique(CommunicationQueue* queue, Message msg)
+{
+  int retval = NVN_NOERR;
+
+  if(queue)
+  {
+    int full = 0;
+    int found = 0;
+
+    if(QueueContainsP(queue, msg))
+    {
+      found = 1;
+    }
+    else if (queue->Size >= queue->Capacity)
+    {
+      full = 1;
+    }
+    else
+    {
+      pthread_mutex_lock(&queue->Mutex);
+
+      if(QueueContainsP(queue, msg))
+      {
+        found = 1;
+      }
+      else if (queue->Size >= queue->Capacity)
+      {
+        full = 1;
+      }
+      else
+      {
+        queue->Messages[(queue->Front + queue->Size) % queue->Capacity] = msg;
+        queue->Size++;
+      }
+
+			pthread_mutex_unlock(&queue->Mutex);
+    }
+    
+    if(found)
+    {
+      retval = NVN_ENOTUNIQUE;
+      printf("Dropped non-unique message.\n");
+    }
+    else if(full)
+    {
+      retval = NVN_EQFULL;
+      fprintf(stderr, "Queue full - '%s' message dropped.\n", msg.Message);
+    }
+  }
+
+  return retval;
+}
+
+int QueueContainsP(CommunicationQueue* queue, Message msg)
+{
+  int contains = 0;
+  int i;
+
+  if(queue)
+  {
+    for(i = queue->Front; i < queue->Front + queue->Size; i++)
+    {
+      if(EqualMessagesP(msg, queue->Messages[i % queue->Capacity]))
+      {
+        contains = 1;
+        break;
+      }
+    }
+  }
+
+  return contains;
+}
+
