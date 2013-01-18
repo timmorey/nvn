@@ -65,7 +65,7 @@ protected:
 	bool _LeftMouseDown;
 	int _MouseDownX, _MouseDownY;
   float _MouseDownCenterX, _MouseDownCenterY;
-	int _CenterX, _CenterY;
+	float _CenterX, _CenterY;
 	float _ZoomLevel, _ZoomFactor;
   bool _Dirty;
 

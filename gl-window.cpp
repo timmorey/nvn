@@ -68,7 +68,7 @@ GLWindow::GLWindow(const char* title, int x, int y, int width, int height,
 		_Borderless(borderless),
 		_LeftMouseDown(false),
 		_MouseDownX(-1), _MouseDownY(-1),
-		_CenterX(0), _CenterY(0),
+		_CenterX(0.0f), _CenterY(0.0f),
 		_ZoomLevel(1.0), _ZoomFactor(1.1),
     _Dirty(true)
 {
