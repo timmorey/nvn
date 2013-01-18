@@ -46,7 +46,7 @@ typedef struct
  * Static Member Initialization
  ******************************************************************************/
 
-std::list<GLWindow*> GLWindow::_Windows;
+GLWindow* GLWindow::_Window = 0;
 CommunicationQueue GLWindow::_UIQueue;
 pthread_t GLWindow::_UIThread;
 bool GLWindow::_UIThreadActive = false;
@@ -76,7 +76,7 @@ GLWindow::GLWindow(const char* title, int x, int y, int width, int height,
 	{
 		printf("Starting UI thread...\n");
 
-		_Windows.clear();
+		_Window = 0;
 		_KeepUIThreadActive = true;
 		InitQueue(&_UIQueue);
 		
@@ -113,7 +113,7 @@ GLWindow::~GLWindow()
 		this->CloseWindow();
 
 	// If all windows are closed, then shutdown the UI thread.
-	if(_Windows.empty())
+	if(0 == _Window)
 	{
 		_KeepUIThreadActive = false;
 		pthread_join(_UIThread, 0);
@@ -174,19 +174,7 @@ float GLWindow::GetPixelsPerModelUnit() const
 
 bool GLWindow::IsActive() const
 {
-	bool retval = false;
-	std::list<GLWindow*>::iterator iter;
-
-	for(iter = _Windows.begin(); iter != _Windows.end(); iter++)
-	{
-		if(this == *iter)
-		{
-			retval = true;
-			break;
-		}
-	}
-
-	return retval;
+  return _Window != 0;
 }
 
 int GLWindow::AsyncRefresh()
@@ -295,7 +283,7 @@ int GLWindow::CreateWindow()
 		XMapWindow(_Display, _XWindow);
 		glClearColor(0.0, 0.0, 0.0, 1.0);
 
-		_Windows.push_back(this);
+    _Window = this;
 	}
 
 	return retval;
@@ -306,7 +294,7 @@ int GLWindow::DestroyWindow()
 	printf("Destroying window...\n");
 
 	XDestroyWindow(_Display, _XWindow);
-	_Windows.remove(this);
+	_Window = 0;
 }
 
 int GLWindow::GetMousePos(int* x, int* y) const
@@ -354,9 +342,10 @@ int GLWindow::HandleXButtonPress(XEvent event)
 	{
 	case Button1:
 		_LeftMouseDown = true;
-		//this->GetMousePos(&_MouseDownX, &_MouseDownY);
     _MouseDownX = event.xbutton.x;
     _MouseDownY = event.xbutton.y;
+    _MouseDownCenterX = _CenterX;
+    _MouseDownCenterY = _CenterY;
 		break;
 
 	case Button4:
@@ -384,16 +373,7 @@ int GLWindow::HandleXButtonRelease(XEvent event)
 	switch(event.xbutton.button)
 	{
 	case Button1:
-		if(_LeftMouseDown)
-		{
-			int curx, cury;
-			float scale = this->GetPixelsPerModelUnit();
-			this->GetMousePos(&curx, &cury);
-
-			_CenterX += ((_MouseDownX - event.xbutton.x) / scale);
-			_CenterY -= ((_MouseDownY - event.xbutton.y) / scale);
-			_LeftMouseDown = false;
-		}
+    _LeftMouseDown = false;
 		break;
 	}
 }
@@ -426,7 +406,12 @@ int GLWindow::HandleXKeyRelease(XEvent event)
 int GLWindow::HandleXMotionNotify(XEvent event)
 {
 	if(_LeftMouseDown)
+  {
+    float scale = this->GetPixelsPerModelUnit();
+    _CenterX = _MouseDownCenterX + ((_MouseDownX - event.xbutton.x) / scale);
+    _CenterY = _MouseDownCenterY - ((_MouseDownY - event.xbutton.y) / scale);
 		this->AsyncRefresh();
+  }
 }
 
 int GLWindow::RenderModel()
@@ -436,26 +421,12 @@ int GLWindow::RenderModel()
 	
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	float centerx, centery;
-	float scale = this->GetPixelsPerModelUnit();
 
-	if(_LeftMouseDown)
-	{
-    int curx, cury;
-    this->GetMousePos(&curx, &cury);
-		centerx = _CenterX + ((_MouseDownX - curx) / scale);
-		centery = _CenterY - ((_MouseDownY - cury) / scale);
-	}
-	else
-	{
-		centerx = _CenterX;
-		centery = _CenterY;
-	}
-
-	float xmin = centerx - (_Width / 2.0f) / scale;
-	float xmax = centerx + (_Width / 2.0f) / scale;
-	float ymin = centery - (_Height / 2.0f) / scale;
-	float ymax = centery + (_Height / 2.0f) / scale;
+  float scale = this->GetPixelsPerModelUnit();
+	float xmin = _CenterX - (_Width / 2.0f) / scale;
+	float xmax = _CenterX + (_Width / 2.0f) / scale;
+	float ymin = _CenterY - (_Height / 2.0f) / scale;
+	float ymax = _CenterY + (_Height / 2.0f) / scale;
 	glOrtho(xmin, xmax, ymin, ymax, -1.0f, 1.0f);
 	
 	glMatrixMode(GL_MODELVIEW);
@@ -463,28 +434,13 @@ int GLWindow::RenderModel()
 	if(_Model.TheLayer)
 		_Model.TheLayer->Render();
 	glXSwapBuffers(_Display, _XWindow);
+
+  _Dirty = false;
 }
 
 /******************************************************************************
  * Static Members:
  ******************************************************************************/
-
-GLWindow* GLWindow::FindWindow(Window xwindow)
-{
-	GLWindow* retval = 0;
-	std::list<GLWindow*>::iterator iter;
-
-	for(iter = _Windows.begin(); iter != _Windows.end(); iter++)
-	{
-		if((*iter)->_XWindow == xwindow)
-		{
-			retval = *iter;
-			break;
-		}
-	}
-
-	return retval;
-}
 
 int GLWindow::InitUIThread()
 {
@@ -534,70 +490,73 @@ int GLWindow::RunMessageLoop()
 	Message msg;
 	int valid;
 	GLWindow* win;
-  std::list<GLWindow*>::iterator iter;
   double renderStart;
   double renderElapsed = 0.0;
   int renderCount = 0;
+  bool userModified = false;
+
+  int rank, commsize;
+  MPI_Comm_size(MPI_COMM_WORLD, &commsize);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  
+  float sendbuf[4];
+  float* recvbuf = (float*)malloc(4 * commsize);
 
 	_UIThreadActive = true;
 
 	while(_KeepUIThreadActive)
 	{
-    if(XPending(_Display)) // Give X11 messages highest priority, and process
+    if(_Window && XPending(_Display)) // Give X11 messages highest priority, and process
 		{                      // all if there are any, to avoid a long queue.
+      float prevCX = _Window->_CenterX;
+      float prevCY = _Window->_CenterY;
+      float prevZoom = _Window->_ZoomLevel;
+
       while(XPending(_Display))
       {
         XNextEvent(_Display, &event);
         switch(event.type)
         {
         case ButtonPress:
-          win = FindWindow(event.xbutton.window);
-          if(win)
-            win->HandleXButtonPress(event);
+          _Window->HandleXButtonPress(event);
           break;
           
         case ButtonRelease:
-          win = FindWindow(event.xbutton.window);
-          if(win)
-            win->HandleXButtonRelease(event);
+          _Window->HandleXButtonRelease(event);
           break;
           
         case ClientMessage:
-          win = FindWindow(event.xclient.window);
-          if(win && event.xclient.data.l[0] == win->_WMDeleteMessage)
-            win->DestroyWindow();
+          if(event.xclient.data.l[0] == _Window->_WMDeleteMessage)
+            _Window->DestroyWindow();
           break;
           
         case ConfigureNotify:
-          win = FindWindow(event.xconfigure.window);
-          if(win)
-            win->HandleXConfigureNotify(event);
+          _Window->HandleXConfigureNotify(event);
           break;
           
         case Expose:
-          win = FindWindow(event.xexpose.window);
-          if(win)
-            win->HandleXExpose(event);
+          _Window->HandleXExpose(event);
           break;
           
         case KeyPress:
-          win = FindWindow(event.xkey.window);
-          if(win)
-            win->HandleXKeyPress(event);
+          _Window->HandleXKeyPress(event);
           break;
           
         case KeyRelease:
-          win = FindWindow(event.xkey.window);
-          if(win)
-            win->HandleXKeyRelease(event);
+          _Window->HandleXKeyRelease(event);
           break;
           
         case MotionNotify:
-          win = FindWindow(event.xmotion.window);
-          if(win)
-            win->HandleXMotionNotify(event);
+          _Window->HandleXMotionNotify(event);
           break;
         }
+      }
+
+      if(_Window->_CenterX != prevCX || 
+         _Window->_CenterY != prevCY || 
+         _Window->_ZoomLevel != prevZoom)
+      {
+        userModified = true;
       }
     }
     else if(_UIQueue.Size > 0) // Local messages receive a lower priority
@@ -631,27 +590,46 @@ int GLWindow::RunMessageLoop()
 		}
     else
     {
-      for(iter = _Windows.begin(); iter != _Windows.end(); iter++)
+      // Sync center and zoom before drawing, so all render the same scene
+      sendbuf[0] = userModified ? 1.0f : 0.0f;
+      sendbuf[1] = _Window->_CenterX;
+      sendbuf[2] = _Window->_CenterY;
+      sendbuf[3] = _Window->_ZoomLevel;
+      MPI_Allgather(sendbuf, 4, MPI_FLOAT, recvbuf, 4, MPI_FLOAT, MPI_COMM_WORLD);
+
+      if(! userModified)
       {
-        if((*iter)->_Dirty)
+        for(int i = 0; i < commsize; i++)
         {
-          renderStart = MPI_Wtime();
-
-          (*iter)->RenderModel();
-          (*iter)->_Dirty = false;
-
-          renderElapsed += MPI_Wtime() - renderStart;
-          renderCount ++;
-          if(renderCount >= 100)
+          if(recvbuf[i*4] > 0.0f)
           {
-            printf("Average render time: %f s\n", renderElapsed / renderCount);
-            renderElapsed = 0.0;
-            renderCount = 0;
+            _Window->_CenterX = recvbuf[i*4 + 1];
+            _Window->_CenterY = recvbuf[i*4 + 2];
+            _Window->_ZoomLevel = recvbuf[i*4 + 3];
+            _Window->_Dirty = true;
           }
         }
       }
+
+      userModified = false;
+
+      if(_Window->_Dirty)
+      {
+        renderStart = MPI_Wtime();
+        
+        _Window->RenderModel();
+        
+        renderElapsed += MPI_Wtime() - renderStart;
+        renderCount ++;
+        if(renderCount >= 100)
+        {
+          printf("Average render time: %f s\n", renderElapsed / renderCount);
+          renderElapsed = 0.0;
+          renderCount = 0;
+        }
+      }
     }
-	}
+  }
 
 	_UIThreadActive = false;
 
@@ -662,10 +640,10 @@ int GLWindow::ShutdownUIThread()
 {
 	int retval = NVN_NOERR;
 
-	std::list<GLWindow*>::iterator iter;
-	for(iter = _Windows.begin(); iter != _Windows.end(); iter++)
-	{
-		(*iter)->DestroyWindow();
+  if(_Window)
+  {
+		_Window->DestroyWindow();
+    _Window = 0;
 	}
 
 	if(_Display)

@@ -9,8 +9,6 @@
 #include "communication-queue.h"
 #include "model.hpp"
 
-#include <list>
-
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xos.h>
@@ -66,12 +64,13 @@ protected:
 	Model _Model;
 	bool _LeftMouseDown;
 	int _MouseDownX, _MouseDownY;
+  float _MouseDownCenterX, _MouseDownCenterY;
 	int _CenterX, _CenterY;
 	float _ZoomLevel, _ZoomFactor;
   bool _Dirty;
 
 protected:
-	static std::list<GLWindow*> _Windows;
+	static GLWindow* _Window;
 	static pthread_t _UIThread;
 	static bool _UIThreadActive;
 	static bool _KeepUIThreadActive;
@@ -79,7 +78,6 @@ protected:
 	static Display* _Display;
 	static XVisualInfo* _VisualInfo;
 
-	static GLWindow* FindWindow(Window xwindow);
 	static int InitUIThread();
 	static int RunMessageLoop();
 	static int ShutdownUIThread();
