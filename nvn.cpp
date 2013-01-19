@@ -15,6 +15,12 @@
 #include <stdlib.h>
 
 
+int LoadCReSISASCIIGrid(const char* filename, DataGrid** grid);
+int LoadPNetCDFGrid(const char* filename, const char* varname, 
+                    MPI_Offset start[], MPI_Offset count[],
+                    DataGrid** grid);
+MPI_Datatype NCTypeToMPI(nc_type type);
+
 /**
 	 Parses a string representation of a hyperslab, which is a comma-delimited
 	 sequence of integers.
@@ -27,7 +33,6 @@
  */
 int ParseHyperslab(const char* str, MPI_Offset slab[]);
 
-MPI_Datatype NCTypeToMPI(nc_type type);
 
 int main(int argc, char* argv[])
 {
@@ -37,14 +42,6 @@ int main(int argc, char* argv[])
 	char filename[256], varname[16][256];
   int nvars;
 	int quit = 0;
-	nc_type vartype;
-	int ncid, varid, ndims, dimid[NC_MAX_DIMS];
-	int slabdims;
-	MPI_Offset varlen, dimlen[NC_MAX_DIMS];
-	int ncresult;
-	int i;
-	void* buf = 0;
-	int typesize = 0;
 	MPI_Offset slabstart[NC_MAX_DIMS], slabcount[NC_MAX_DIMS];
   const char* str, *str2;
   int pos = 0;
@@ -54,7 +51,7 @@ int main(int argc, char* argv[])
   MPI_Comm_size(MPI_COMM_WORLD, &commsize);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-	for(i = 0; i < NC_MAX_DIMS; i++)
+	for(int i = 0; i < NC_MAX_DIMS; i++)
 	{
 		slabstart[i] = 0;
 		slabcount[i] = -1;
@@ -130,79 +127,205 @@ int main(int argc, char* argv[])
 
   printf("done with options\n");
 
-  if(nvars != commsize)
+  //if(nvars != commsize)
+  //{
+  //  fprintf(stderr, "nvars=%d != commsize=%d\n", nvars, commsize);
+  //  exit(1);
+  //}
+
+  DataGrid* grid = 0;
+  //LoadPNetCDFGrid(filename, varname[rank], slabstart, slabcount, &grid);
+  LoadCReSISASCIIGrid(filename, &grid);
+  if(grid)
   {
-    fprintf(stderr, "nvars=%d != commsize=%d\n", nvars, commsize);
-    exit(1);
-  }
-
-	ncresult = ncmpi_open(MPI_COMM_WORLD, filename, NC_NOWRITE, MPI_INFO_NULL, &ncid);
-	if(NC_NOERR != ncresult)
-	{
-		fprintf(stderr, "Failed to open '%s'.\n"
-						"  Error message: %s\n",
-						filename, ncmpi_strerror(ncresult));
-		exit(1);
-	}
-
-	ncresult = ncmpi_inq_varid(ncid, varname[rank], &varid);
-	if(NC_NOERR != ncresult)
-	{
-		fprintf(stderr, "Cannot find a variable named '%s' in '%s'.\n"
-						"  Error message: %s\n",
-						varname[rank], filename, ncmpi_strerror(ncresult));
-		exit(1);
-	}
-
-	ncresult = ncmpi_inq_var(ncid, varid, 0, &vartype, &ndims, dimid, 0);
-
-	varlen = 1;
-	slabdims = 0;
-	width = -1;
-	height = -1;
-	for(i = 0; i < ndims; i++)
-	{
-		ncresult = ncmpi_inq_dimlen(ncid, dimid[i], &dimlen[i]);
-		varlen *= dimlen[i];
-
-		if(slabcount[i] == -1)
-			slabcount[i] = dimlen[i] - slabstart[i];
-
-		if(slabcount[i] > 1)
-		{
-			slabdims++;
-			if(height < 0) height = slabcount[i];
-			else width = slabcount[i];
-		}
-	}
-
-	if(slabdims != 2)
-	{
-		fprintf(stderr, "Only two-dimensional data is supported, but the hyperslab "
-						"defines a %d-dimensional space.\n", ndims);
-		exit(1);
-	}
-
-	MPI_Datatype mpitype = NCTypeToMPI(vartype);
-	MPI_Type_size(mpitype, &typesize);
-	buf = malloc(varlen * typesize);
-	ncresult = ncmpi_get_vara_all(ncid, varid, slabstart, slabcount, 
-																buf, varlen, mpitype);
-	if(NC_NOERR != ncresult)
-	{
-		fprintf(stderr, "Failed to read data values.\n"
-						"Error message: %s\n", ncmpi_strerror(ncresult));
-		exit(1);
-	}
-
-	GLWindow win("blah", 100, 100, 640, 480, false);
-	win.AddLayer(new Layer(width, height, mpitype, buf));
+    GLWindow win("blah", 100, 100, 640, 480, false);
+    win.AddLayer(new Layer(grid));
 	
-	while(win.IsActive())
-		sleep(1);
+    while(win.IsActive())
+      sleep(1);
+  }
+  else
+  {
+    fprintf(stderr, "Unable to load grid.\n");
+  }
 
 	MPI_Finalize();
 	return 0;
+}
+
+
+#define READBUF_SIZE 4194304
+#define WIDTH 720
+#define HEIGHT 740
+int LoadCReSISASCIIGrid(const char* filename, DataGrid** grid)
+{
+  int retval = NVN_NOERR;
+  int ndims = 2;
+  MPI_Offset dimlen[MAX_DIMS];
+  char readbuf[READBUF_SIZE];
+  float* buf = 0;
+  int n;
+  int line = 0;
+  int x = 0;
+  int y = 0;
+  int readbufOffset = 0;
+  int headerlines = 6;
+  int mark = 0;
+  Variant nodataValue;
+
+  nodataValue.Type = VariantTypeFloat;
+  nodataValue.Value.FloatVal = -9999.0f;
+
+  dimlen[0] = HEIGHT;
+  dimlen[1] = WIDTH;
+
+  FILE* f = 0;
+  f = fopen(filename, "r");
+  if(0 == f)
+  {
+    retval = NVN_ERROR;
+    fprintf(stderr, "Unable to open file '%s'.\n", filename);
+  }
+
+  buf = (float*)malloc(WIDTH * HEIGHT * sizeof(float));
+
+  if(NVN_NOERR == retval)
+  {
+    while(! feof(f))
+    {
+      n = fread(readbuf + readbufOffset, sizeof(char), READBUF_SIZE - readbufOffset, f);
+
+      mark = 0;
+      for(int i = 0; i < n + readbufOffset; i++)
+      {
+        switch(readbuf[i])
+        {
+        case '\n':
+          line ++;
+          mark = i + 1;
+          if(line > headerlines)
+          {
+            x = 0;
+            y ++;
+          }
+          break;
+
+        case ' ':
+          if(line >= headerlines)
+          {
+            buf[y * WIDTH + x] = atof(readbuf + mark);
+            mark = i + 1;
+            x ++;
+          }
+          break;
+        }
+      }
+
+      if(mark < n + readbufOffset)
+      {
+        memcpy(readbuf, readbuf + mark, n + readbufOffset - mark);
+        readbufOffset = n + readbufOffset - mark;
+      }
+    }
+  }
+
+  if(NVN_NOERR == retval && grid)
+  {
+    *grid = new DataGrid(ndims, dimlen, MPI_FLOAT, buf);
+    (*grid)->SetNodataValue(nodataValue);
+  }
+
+  return retval;
+}
+
+
+int LoadPNetCDFGrid(const char* filename, const char* varname, 
+                    MPI_Offset start[], MPI_Offset count[],
+                    DataGrid** grid)
+{
+  int retval = NVN_NOERR;
+  int ncresult;
+  int ncid, varid;
+  nc_type vartype;
+  int ndims, dimid[NC_MAX_DIMS];
+  MPI_Offset varlen, dimlen[NC_MAX_DIMS];
+  int gridndims;
+  MPI_Offset griddimlen[NC_MAX_DIMS];
+  MPI_Datatype gridtype;
+  int typesize;
+  void* buf = 0;
+
+  if(NVN_NOERR == retval)
+  {
+    ncresult = ncmpi_open(MPI_COMM_WORLD, filename, 
+                          NC_NOWRITE, MPI_INFO_NULL, &ncid);
+    if(NC_NOERR != ncresult)
+    {
+      retval = ncresult;
+      fprintf(stderr, "Failed to open '%s'.\n"
+              "  Error message: %s\n",
+              filename, ncmpi_strerror(ncresult));
+    }
+  }
+
+  if(NVN_NOERR == retval)
+  {
+    ncresult = ncmpi_inq_varid(ncid, varname, &varid);
+    if(NC_NOERR != ncresult)
+    {
+      retval = ncresult;
+      fprintf(stderr, "Cannot find a variable named '%s' in '%s'.\n"
+              "  Error message: %s\n",
+              varname, filename, ncmpi_strerror(ncresult));
+    }
+  }
+
+  if(NVN_NOERR == retval)
+  {
+    ncmpi_inq_var(ncid, varid, 0, &vartype, &ndims, dimid, 0);
+
+    varlen = 1;
+    gridndims = 0;
+    for(int i = 0; i < ndims; i++)
+    {
+      ncmpi_inq_dimlen(ncid, dimid[i], &dimlen[i]);
+      varlen *= dimlen[i];
+      
+      if(count[i] == -1)
+        count[i] = dimlen[i] - start[i];
+      
+      if(count[i] > 1)
+        griddimlen[gridndims++] = dimlen[i];
+    }
+
+    if(gridndims != 2)
+    {
+      fprintf(stderr, "Only two-dimensional data is supported, but the hyperslab "
+              "defines a %d-dimensional space.\n", ndims);
+      retval = NVN_ERROR;
+    }
+  }
+
+  if(NVN_NOERR == retval)
+  {
+    gridtype = NCTypeToMPI(vartype);
+    MPI_Type_size(gridtype, &typesize);
+    buf = malloc(varlen * typesize);
+    
+    ncresult = ncmpi_get_vara_all(ncid, varid, start, count, 
+                                  buf, varlen, gridtype);
+    if(NC_NOERR != ncresult)
+    {
+      retval = ncresult;
+      fprintf(stderr, "Failed to read data values.\n"
+              "Error message: %s\n", ncmpi_strerror(ncresult));
+    }
+  }
+
+  if(NVN_NOERR == retval && grid)
+    *grid = new DataGrid(gridndims, griddimlen, gridtype, buf);
+
+  return retval;
 }
 
 

@@ -5,16 +5,20 @@
 #ifndef __LAYER_HPP__
 #define __LAYER_HPP__
 
+
 #include "color-ramp.h"
 #include "variant.h"
+
+#include "DataGrid.hpp"
 
 #define MPICH_SKIP_MPICXX 1
 #include <mpi.h>
 
+
 class Layer
 {
 public:
-	Layer(int width, int height, MPI_Datatype datatype, void* data);
+	Layer(DataGrid* grid);
 	~Layer();
 
 public:
@@ -24,15 +28,11 @@ public:
 	int Render();
 
 public:
-	int GetWidth() const { return _Width; }
-	int GetHeight() const { return _Height; }
-	int GetValueAsVariant(int x, int y, Variant* value);
+	int GetWidth() const { return _DataGrid ? _DataGrid->GetDimLen(0) : -1; }
+	int GetHeight() const { return _DataGrid ? _DataGrid->GetDimLen(1) : -1; }
 
 protected:
-	int _Width;
-	int _Height;
-	MPI_Datatype _DataType;
-	void* _Data;
+  DataGrid* _DataGrid;
 	ColorRamp _Ramp;
 	Variant _MinVal;
 	Variant _MaxVal;

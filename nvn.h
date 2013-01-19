@@ -5,12 +5,23 @@
 #ifndef __NVN_H__
 #define __NVN_H__
 
-/**
-	 Error codes:
- */
+/******************************************************************************
+ * Constants:
+ ******************************************************************************/
+
+#define MAX_DIMS 4
+#define MAX_NAME 64
+
+#define DEG2RADF 0.0174532925f
+
+
+/******************************************************************************
+ * Error codes:
+ ******************************************************************************/
 
 #define NVN_NOERR 0
 
+#define NVN_ERROR         -1
 #define NVN_EINVARGS       1
 #define NVN_ENULL          2
 #define NVN_ENOTINIT       3
@@ -19,7 +30,5 @@
 #define NVN_EINVTYPE       6
 #define NVN_EQFULL         7
 #define NVN_ENOTUNIQUE     8
-
-#define DEG2RADF 0.0174532925f
 
 #endif

@@ -7,6 +7,8 @@
 #include "nvn.h"
 #include "variant.h"
 
+#include "DataGrid.hpp"
+
 #define MPICH_SKIP_MPICXX 1
 #include <mpi.h>
 
@@ -15,26 +17,36 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 
-Layer::Layer(int width, int height, MPI_Datatype datatype, void* data)
-	: _Width(width),
-		_Height(height),
-		_DataType(datatype),
-		_Data(data),
+Layer::Layer(DataGrid* grid)
+	: _DataGrid(grid),
 		_Ramp(DefaultColorRamp),
-		_TexBitmap(0)
+		_TexBitmap(0),
+    _TexWidth(0),
+    _TexHeight(0),
+    _TextureID(-1)
 {
-	Variant value;
-	_MinVal = MaxVariant(datatype);
-	_MaxVal = MinVariant(datatype);
-	for(int x = 0; x < _Width; x++)
-	{
-		for(int y = 0; y < _Height; y++)
-		{
-			this->GetValueAsVariant(x, y, &value);
-			if(0 > VariantCompare(value, _MinVal)) _MinVal = value;
-			if(0 < VariantCompare(value, _MaxVal)) _MaxVal = value;
-		}
-	}
+  if(_DataGrid)
+  {
+    Variant value;
+    MPI_Offset pos[MAX_DIMS];
+    _MinVal = MaxVariant(_DataGrid->GetType());
+    _MaxVal = MinVariant(_DataGrid->GetType());
+    for(pos[0] = 0; pos[0] < this->GetWidth(); pos[0]++)
+    {
+      for(pos[1] = 0; pos[1] < this->GetHeight(); pos[1]++)
+      {
+        if(_DataGrid->HasData(pos))
+        {
+          _DataGrid->GetElemAsVariant(pos, &value);
+          if(0 > VariantCompare(value, _MinVal)) _MinVal = value;
+          if(0 < VariantCompare(value, _MaxVal)) _MaxVal = value;
+        }
+      }
+    }
+
+    printf("min=%f, max=%f\n", 
+           VariantValueAsDouble(_MinVal), VariantValueAsDouble(_MaxVal));
+  }
 }
 
 Layer::~Layer()
@@ -46,61 +58,39 @@ Layer::~Layer()
 	}
 }
 
-int Layer::GetValueAsVariant(int x, int y, Variant* value)
-{
-	int retval = NVN_NOERR;
-
-	if(value)
-	{
-		int i = y * _Width + x;
-		switch(_DataType)
-		{
-		case MPI_FLOAT:
-			value->Type = VariantTypeFloat;
-			value->Value.FloatVal = ((float*)_Data)[i];
-			break;
-
-		case MPI_DOUBLE:
-			value->Type = VariantTypeDouble;
-			value->Value.DoubleVal = ((double*)_Data)[i];
-			break;
-
-		default:
-			retval = NVN_EINVTYPE;
-			fprintf(stderr, "Layer::GetValueAsVariant - Data type not supported.\n");
-			break;
-		}
-	}
-	else
-	{
-		retval = NVN_EINVARGS;
-	}
-
-	return retval;
-}
-
 int Layer::Render()
 {
+  int datawidth = this->GetWidth();
+  int dataheight = this->GetHeight();
+
 	if(0 == _TexBitmap)
 	{
 		_TexWidth = 1;
 		_TexHeight = 1;
 
-		while(_TexWidth < _Width)
+		while(_TexWidth < datawidth)
 			_TexWidth *= 2;
 
-		while(_TexHeight < _Height)
+		while(_TexHeight < dataheight)
 			_TexHeight *= 2;
 
 		_TexBitmap = (char*)malloc(_TexWidth * _TexHeight * 4);
 		Variant value;
-		for(int x = 0; x < _Width; x++)
+    MPI_Offset pos[MAX_DIMS];
+		for(pos[0] = 0; pos[0] < datawidth; pos[0]++)
 		{
-			for(int y = 0; y < _Height; y++)
+			for(pos[1] = 0; pos[1] < dataheight; pos[1]++)
 			{
-				GetValueAsVariant(x, y, &value);
-				((int*)_TexBitmap)[y * _TexWidth + x] = 
-					GetColor(_Ramp, value, _MinVal, _MaxVal);
+        if(_DataGrid->HasData(pos))
+        {
+          _DataGrid->GetElemAsVariant(pos, &value);
+          ((int*)_TexBitmap)[pos[1] * _TexWidth + pos[0]] = 
+            GetColor(_Ramp, value, _MinVal, _MaxVal);
+        }
+        else
+        {
+          ((int*)_TexBitmap)[pos[1] * _TexWidth + pos[0]] = 0x00000000;
+        }
 			}
 		}
 
@@ -114,25 +104,28 @@ int Layer::Render()
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexImage2D(GL_TEXTURE_2D, 0, 4, 
 								 _TexWidth, _TexHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, _TexBitmap);
+
+    // TODO: we're done with _TexBitmap now, and might as well free it, but then
+    // we'd need a different flag telling us if we need to create the texture...
 	}
 	
 	glBindTexture(GL_TEXTURE_2D, _TextureID);
 	glEnable(GL_TEXTURE_2D);
 	
 	glBegin(GL_QUADS);
+  {
+    glTexCoord2f(0.0f, 0.0f);
+    glVertex3f(0.0f, 0.0f, 0.0f);
+    
+    glTexCoord2f((float)datawidth / (float)_TexWidth, 0.0f);
+    glVertex3f((float)datawidth, 0.0f, 0.0f);
 
-	glTexCoord2f(0.0f, 0.0f);
-	glVertex3f(0.0f, 0.0f, 0.0f);
-
-	glTexCoord2f((float)_Width / (float)_TexWidth, 0.0f);
-	glVertex3f((float)_Width, 0.0f, 0.0f);
-
-	glTexCoord2f((float)_Width / (float)_TexWidth, 
-							 (float)_Height / (float)_TexHeight);
-	glVertex3f((float)_Width, (float)_Height, 0.0f);
-
-	glTexCoord2f(0.0f, (float)_Height / (float)_TexHeight);
-	glVertex3f(0.0f, (float)_Height, 0.0f);
-
+    glTexCoord2f((float)datawidth / (float)_TexWidth, 
+							 (float)dataheight / (float)_TexHeight);
+    glVertex3f((float)datawidth, (float)dataheight, 0.0f);
+    
+    glTexCoord2f(0.0f, (float)dataheight / (float)_TexHeight);
+    glVertex3f(0.0f, (float)dataheight, 0.0f);
+  }
 	glEnd();
 }
