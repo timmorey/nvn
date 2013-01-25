@@ -67,9 +67,11 @@ GLWindow::GLWindow(const char* title, int x, int y, int width, int height,
 		_Height(height),
 		_Borderless(borderless),
 		_LeftMouseDown(false),
-		_MouseDownX(-1), _MouseDownY(-1),
+    _CtrlDown(false),
+    _AltDown(false),
 		_CenterX(0.0f), _CenterY(0.0f),
 		_ZoomLevel(1.0), _ZoomFactor(1.1),
+    _XRotation(0.0f), _ZRotation(0.0f),
     _Dirty(true)
 {
 	if(! _UIThreadActive)
@@ -394,12 +396,46 @@ int GLWindow::HandleXExpose(XEvent event)
 int GLWindow::HandleXKeyPress(XEvent event)
 {
 	int retval = NVN_NOERR;
+
+  switch(XLookupKeysym(&event.xkey, 0))
+  {
+  case XK_Alt_L:
+  case XK_Alt_R:
+    _AltDown = true;
+    _AltDownZRotation = _ZRotation;
+    _AltDownX = event.xkey.x;
+    _AltDownY = event.xkey.y;
+    break;
+
+  case XK_Control_L:
+  case XK_Control_R:
+    _CtrlDown = true;
+    _CtrlDownXRotation = _XRotation;
+    _CtrlDownX = event.xkey.x;
+    _CtrlDownY = event.xkey.y;
+    break;
+  }
+
 	return retval;
 }
 
 int GLWindow::HandleXKeyRelease(XEvent event)
 {
 	int retval = NVN_NOERR;
+
+  switch(XLookupKeysym(&event.xkey, 0))
+  {
+  case XK_Alt_L:
+  case XK_Alt_R:
+    _AltDown = false;
+    break;
+
+  case XK_Control_L:
+  case XK_Control_R:
+    _CtrlDown = false;
+    break;
+  }
+
 	return retval;
 }
 
@@ -411,6 +447,18 @@ int GLWindow::HandleXMotionNotify(XEvent event)
     _CenterX = _MouseDownCenterX + ((_MouseDownX - event.xbutton.x) / scale);
     _CenterY = _MouseDownCenterY - ((_MouseDownY - event.xbutton.y) / scale);
 		this->AsyncRefresh();
+  }
+
+  if(_CtrlDown)
+  {
+    _XRotation = _CtrlDownXRotation + (_CtrlDownY - event.xbutton.y);
+    this->AsyncRefresh();
+  }
+
+  if(_AltDown)
+  {
+    _ZRotation = _AltDownZRotation + (_AltDownX - event.xbutton.x);
+    this->AsyncRefresh();
   }
 }
 
@@ -427,10 +475,16 @@ int GLWindow::RenderModel()
 	float xmax = _CenterX + (_Width / 2.0f) / scale;
 	float ymin = _CenterY - (_Height / 2.0f) / scale;
 	float ymax = _CenterY + (_Height / 2.0f) / scale;
-	glOrtho(xmin, xmax, ymin, ymax, -1.0f, 1.0f);
+	glOrtho(xmin, xmax, ymin, ymax, -1000.0f, 1000.0f);
 	
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
+  
+  glTranslatef(_CenterX, _CenterY, 0.0f);
+  glRotatef(_XRotation, 1.0f, 0.0f, 0.0f);
+  glRotatef(_ZRotation, 0.0f, 0.0f, 1.0f);
+  glTranslatef(-_CenterX,-_CenterY, 0.0f);
+
 	if(_Model.TheLayer)
 		_Model.TheLayer->Render();
 	glXSwapBuffers(_Display, _XWindow);

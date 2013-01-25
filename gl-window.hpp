@@ -61,12 +61,19 @@ protected:
 	Window _XWindow;
 	GLXContext _GLXContext;
 	Atom _WMDeleteMessage;
+
 	Model _Model;
-	bool _LeftMouseDown;
-	int _MouseDownX, _MouseDownY;
-  float _MouseDownCenterX, _MouseDownCenterY;
 	float _CenterX, _CenterY;
 	float _ZoomLevel, _ZoomFactor;
+  float _XRotation, _ZRotation;
+
+	bool _LeftMouseDown, _CtrlDown, _AltDown;
+	int _MouseDownX, _MouseDownY;
+  float _MouseDownCenterX, _MouseDownCenterY;
+  int _CtrlDownX, _CtrlDownY;
+  int _AltDownX, _AltDownY;
+  float _CtrlDownXRotation, _AltDownZRotation;
+
   bool _Dirty;
 
 protected:
