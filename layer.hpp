@@ -32,6 +32,9 @@ public:
 	int GetHeight() const { return _DataGrid ? _DataGrid->GetDimLen(1) : -1; }
 
 protected:
+  int DrawTriangle(MPI_Offset pt1[], MPI_Offset pt2[], MPI_Offset pt3[]) const;
+
+protected:
   DataGrid* _DataGrid;
 	ColorRamp _Ramp;
 	Variant _MinVal;

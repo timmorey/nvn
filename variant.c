@@ -310,3 +310,26 @@ double VariantValueAsDouble(Variant v)
 
   return retval;
 }
+
+float VariantValueAsFloat(Variant v)
+{
+  float retval = 0.0;
+  
+  switch(v.Type)
+  {
+  case VariantTypeByte:
+    retval = (float)v.Value.ByteVal; break;
+  case VariantTypeChar:
+    retval = (float)v.Value.CharVal; break;
+  case VariantTypeShort:
+    retval = (float)v.Value.ShortVal; break;
+  case VariantTypeDouble:
+    retval = (float)v.Value.DoubleVal; break;
+  case VariantTypeFloat:
+    retval = v.Value.FloatVal; break;
+  case VariantTypeInt:
+    retval = (float)v.Value.IntVal; break;
+  }
+
+  return retval;
+}

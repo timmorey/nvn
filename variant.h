@@ -59,6 +59,8 @@ int VariantIsNearlyEqual(Variant v1, Variant v2);
 
 double VariantValueAsDouble(Variant v);
 
+float VariantValueAsFloat(Variant v);
+
 #ifdef __cplusplus
 }
 #endif

@@ -134,8 +134,8 @@ int main(int argc, char* argv[])
   //}
 
   DataGrid* grid = 0;
-  //LoadPNetCDFGrid(filename, varname[rank], slabstart, slabcount, &grid);
-  LoadCReSISASCIIGrid(filename, &grid);
+  LoadPNetCDFGrid(filename, varname[rank], slabstart, slabcount, &grid);
+  //LoadCReSISASCIIGrid(filename, &grid);
   if(grid)
   {
     GLWindow win("blah", 100, 100, 640, 480, false);

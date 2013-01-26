@@ -285,6 +285,18 @@ int GLWindow::CreateWindow()
 		XMapWindow(_Display, _XWindow);
 		glClearColor(0.0, 0.0, 0.0, 1.0);
 
+    glShadeModel(GL_SMOOTH);
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+
+    float ambcolor[] = { 0.1f, 0.1f, 0.1f, 1.0f };
+    float diffcolor[] = { 0.8f, 0.8f, 0.8f, 1.0f };
+    glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambcolor);
+    glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+    glEnable(GL_COLOR_MATERIAL);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, diffcolor);
+
     _Window = this;
 	}
 
@@ -475,10 +487,13 @@ int GLWindow::RenderModel()
 	float xmax = _CenterX + (_Width / 2.0f) / scale;
 	float ymin = _CenterY - (_Height / 2.0f) / scale;
 	float ymax = _CenterY + (_Height / 2.0f) / scale;
-	glOrtho(xmin, xmax, ymin, ymax, -1000.0f, 1000.0f);
+	glOrtho(xmin, xmax, ymin, ymax, -10000.0f, 10000.0f);
 	
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
+
+  float lightpos[4] = { -1000.0f, -1000.0f, -1000.0f, 0.0f };
+  glLightfv(GL_LIGHT0, GL_POSITION, lightpos);
   
   glTranslatef(_CenterX, _CenterY, 0.0f);
   glRotatef(_XRotation, 1.0f, 0.0f, 0.0f);
@@ -487,6 +502,22 @@ int GLWindow::RenderModel()
 
 	if(_Model.TheLayer)
 		_Model.TheLayer->Render();
+
+  glBegin(GL_LINES);
+  {
+    glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
+
+    glVertex3f(0.0f, 0.0f, 0.0f);
+    glVertex3f(100.0f, 0.0f, 0.0f);
+
+    glVertex3f(0.0f, 0.0f, 0.0f);
+    glVertex3f(0.0f, 100.0f, 0.0f);
+
+    glVertex3f(0.0f, 0.0f, 0.0f);
+    glVertex3f(0.0f, 0.0f, 100.0f);
+  }
+  glEnd();
+
 	glXSwapBuffers(_Display, _XWindow);
 
   _Dirty = false;
