@@ -23,7 +23,9 @@ Layer::Layer(DataGrid* grid)
 		_TexBitmap(0),
     _TexWidth(0),
     _TexHeight(0),
-    _TextureID(-1)
+    _TextureID(-1),
+    _DisplayList(-1),
+    _Compiled(false)
 {
   if(_DataGrid)
   {
@@ -97,58 +99,71 @@ int Layer::DrawTriangle(MPI_Offset pt1[], MPI_Offset pt2[], MPI_Offset pt3[]) co
 
 int Layer::Render()
 {
-  int datawidth = this->GetWidth();
-  int dataheight = this->GetHeight();
-  MPI_Offset nw[MAX_DIMS], ne[MAX_DIMS], se[MAX_DIMS], sw[MAX_DIMS];
-  Variant value;
-  int color;
-
-  glBegin(GL_TRIANGLES);
+  if(! _Compiled)
   {
-    for(sw[0] = 0, se[0] = 1, ne[0] = 1, nw[0] = 0; 
-        se[0] < datawidth && ne[0] < datawidth;
-        sw[0]++, se[0]++, ne[0]++, nw[0]++)
+    int datawidth = this->GetWidth();
+    int dataheight = this->GetHeight();
+    MPI_Offset nw[MAX_DIMS], ne[MAX_DIMS], se[MAX_DIMS], sw[MAX_DIMS];
+    Variant value;
+    int color;
+
+    _DisplayList = glGenLists(1);
+
+    glNewList(_DisplayList, GL_COMPILE);
     {
-      for(sw[1] = 0, se[1] = 0, ne[1] = 1, nw[1] = 1; 
-          se[1] < dataheight && ne[1] < dataheight;
-          sw[1]++, se[1]++, ne[1]++, nw[1]++)
-      {        
-        if(_DataGrid->HasData(ne) && 
-           _DataGrid->HasData(se) &&
-           _DataGrid->HasData(sw) &&
-           _DataGrid->HasData(nw))
+      glBegin(GL_TRIANGLES);
+      {
+        for(sw[0] = 0, se[0] = 1, ne[0] = 1, nw[0] = 0; 
+            se[0] < datawidth && ne[0] < datawidth;
+            sw[0]++, se[0]++, ne[0]++, nw[0]++)
         {
-          this->DrawTriangle(sw, nw, ne);
-          this->DrawTriangle(ne, se, sw);
-        }
-        else if(_DataGrid->HasData(ne) && 
-                _DataGrid->HasData(se) &&
-                _DataGrid->HasData(sw))
-        {
-          this->DrawTriangle(sw, se, ne);
-        }
-        else if(_DataGrid->HasData(ne) && 
-                _DataGrid->HasData(se) &&
-                _DataGrid->HasData(nw))
-        {
-          this->DrawTriangle(se, ne, nw);
-        }
-        else if (_DataGrid->HasData(ne) && 
-                 _DataGrid->HasData(sw) &&
-                 _DataGrid->HasData(nw))
-        {
-          this->DrawTriangle(ne, nw, sw);
-        }
-        else if(_DataGrid->HasData(se) &&
-                _DataGrid->HasData(sw) &&
-                _DataGrid->HasData(nw))
-        {
-          this->DrawTriangle(se, sw, nw);
+          for(sw[1] = 0, se[1] = 0, ne[1] = 1, nw[1] = 1; 
+              se[1] < dataheight && ne[1] < dataheight;
+              sw[1]++, se[1]++, ne[1]++, nw[1]++)
+          {        
+            if(_DataGrid->HasData(ne) && 
+               _DataGrid->HasData(se) &&
+               _DataGrid->HasData(sw) &&
+               _DataGrid->HasData(nw))
+            {
+              this->DrawTriangle(sw, nw, ne);
+              this->DrawTriangle(ne, se, sw);
+            }
+            else if(_DataGrid->HasData(ne) && 
+                    _DataGrid->HasData(se) &&
+                    _DataGrid->HasData(sw))
+            {
+              this->DrawTriangle(sw, se, ne);
+            }
+            else if(_DataGrid->HasData(ne) && 
+                    _DataGrid->HasData(se) &&
+                    _DataGrid->HasData(nw))
+            {
+              this->DrawTriangle(se, ne, nw);
+            }
+            else if (_DataGrid->HasData(ne) && 
+                     _DataGrid->HasData(sw) &&
+                     _DataGrid->HasData(nw))
+            {
+              this->DrawTriangle(ne, nw, sw);
+            }
+            else if(_DataGrid->HasData(se) &&
+                    _DataGrid->HasData(sw) &&
+                    _DataGrid->HasData(nw))
+            {
+              this->DrawTriangle(se, sw, nw);
+            }
+          }
         }
       }
+      glEnd();
     }
+    glEndList();
+
+    _Compiled = true;
   }
-  glEnd();
+
+  glCallList(_DisplayList);
 
   // int datawidth = this->GetWidth();
   // int dataheight = this->GetHeight();

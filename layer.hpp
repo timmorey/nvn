@@ -43,6 +43,8 @@ protected:
 	int _TexWidth;
 	int _TexHeight;
 	unsigned int _TextureID;
+  unsigned int _DisplayList;
+  bool _Compiled;
 };
 
 #endif
