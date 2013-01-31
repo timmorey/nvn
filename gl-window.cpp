@@ -354,8 +354,16 @@ int GLWindow::GetMousePosInModel(float* x, float* y) const
   scale = GetPixelsPerModelUnit();
   retval = GetMousePos(&pixx, &pixy);
 
-  *x = _CenterX + (pixx - _Width / 2.0f) / scale;
-  *y = _CenterY + (pixy - _Height / 2.0f) / scale;
+  float cosx = cos(_XRotation * DEG2RADF);
+  float cosz = cos(_ZRotation * DEG2RADF);
+  float sinz = sin(_ZRotation * DEG2RADF);
+
+  *x = _CenterX - 
+    (_Width / 2.0f - pixx) / scale * cosz +
+    (_Height / 2.0f - pixy) / scale / cosx * sinz;
+  *y = _CenterY - 
+    (_Width / 2.0f - pixx) / scale * sinz -
+    (_Height / 2.0f - pixy) / scale / cosx * cosz;
 
   return retval;
 }
@@ -471,9 +479,18 @@ int GLWindow::HandleXMotionNotify(XEvent event)
 {
 	if(_LeftMouseDown)
   {
+    float cosx = cos(_XRotation * DEG2RADF);
+    float cosz = cos(_ZRotation * DEG2RADF);
+    float sinz = sin(_ZRotation * DEG2RADF);
     float scale = this->GetPixelsPerModelUnit();
-    _CenterX = _MouseDownCenterX + ((_MouseDownX - event.xbutton.x) / scale);
-    _CenterY = _MouseDownCenterY - ((_MouseDownY - event.xbutton.y) / scale);
+
+    _CenterX = _MouseDownCenterX + 
+      ((_MouseDownX - event.xbutton.x) / scale) * cosz -
+      ((_MouseDownY - event.xbutton.y) / scale / cosx * sinz);
+    _CenterY = _MouseDownCenterY - 
+      ((_MouseDownX - event.xbutton.x) / scale) * sinz -
+      ((_MouseDownY - event.xbutton.y) / scale / cosx * cosz);
+
 		this->AsyncRefresh();
   }
 
