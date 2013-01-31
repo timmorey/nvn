@@ -26,8 +26,9 @@ public:
 
 public:
 	int AddLayer(Layer* layer);
-	int CloseWindow();
 	int AsyncRefresh();
+	int CloseWindow();
+  int ResetView();
 
 public:
 	bool IsActive() const;

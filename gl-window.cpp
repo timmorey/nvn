@@ -130,10 +130,16 @@ GLWindow::~GLWindow()
 int GLWindow::AddLayer(Layer* layer)
 {
 	_Model.TheLayer = layer;
-	_CenterX = _Model.GetWidth() / 2.0f;
-	_CenterY = _Model.GetHeight() / 2.0f;
-	_ZoomLevel = 1.0f;
+  this->ResetView();
+}
+
+int GLWindow::AsyncRefresh()
+{
+	int retval = NVN_NOERR;
+  
   _Dirty = true;
+
+	return retval;
 }
 
 int GLWindow::CloseWindow()
@@ -159,6 +165,20 @@ int GLWindow::CloseWindow()
 	}
 }
 
+int GLWindow::ResetView()
+{
+  int retval = NVN_NOERR;
+
+	_CenterX = _Model.GetWidth() / 2.0f;
+	_CenterY = _Model.GetHeight() / 2.0f;
+	_ZoomLevel = 1.0f;
+  _XRotation = 0.0f;
+  _ZRotation = 0.0f;
+  this->AsyncRefresh();
+
+  return retval;
+}
+
 float GLWindow::GetPixelsPerModelUnit() const
 {
 	float scale = 0.0f;  // pixels per model unit
@@ -177,15 +197,6 @@ float GLWindow::GetPixelsPerModelUnit() const
 bool GLWindow::IsActive() const
 {
   return _Window != 0;
-}
-
-int GLWindow::AsyncRefresh()
-{
-	int retval = NVN_NOERR;
-  
-  _Dirty = true;
-
-	return retval;
 }
 
 
@@ -426,6 +437,11 @@ int GLWindow::HandleXKeyPress(XEvent event)
     _CtrlDownX = event.xkey.x;
     _CtrlDownY = event.xkey.y;
     break;
+
+  case XK_r:
+  case XK_R:
+    this->ResetView();
+    break;
   }
 
 	return retval;
@@ -463,7 +479,7 @@ int GLWindow::HandleXMotionNotify(XEvent event)
 
   if(_CtrlDown)
   {
-    _XRotation = _CtrlDownXRotation + (_CtrlDownY - event.xbutton.y);
+    _XRotation = _CtrlDownXRotation - (_CtrlDownY - event.xbutton.y);
     this->AsyncRefresh();
   }
 
