@@ -617,8 +617,8 @@ int GLWindow::RunMessageLoop()
   MPI_Comm_size(MPI_COMM_WORLD, &commsize);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   
-  float sendbuf[4];
-  float* recvbuf = (float*)malloc(4 * commsize);
+  float sendbuf[6];
+  float* recvbuf = (float*)malloc(6 * commsize);
 
 	_UIThreadActive = true;
 
@@ -629,6 +629,8 @@ int GLWindow::RunMessageLoop()
       float prevCX = _Window->_CenterX;
       float prevCY = _Window->_CenterY;
       float prevZoom = _Window->_ZoomLevel;
+      float prevRX = _Window->_XRotation;
+      float prevRZ = _Window->_ZRotation;
 
       while(XPending(_Display))
       {
@@ -672,7 +674,9 @@ int GLWindow::RunMessageLoop()
 
       if(_Window->_CenterX != prevCX || 
          _Window->_CenterY != prevCY || 
-         _Window->_ZoomLevel != prevZoom)
+         _Window->_ZoomLevel != prevZoom ||
+         _Window->_XRotation != prevRX ||
+         _Window->_ZRotation != prevRZ)
       {
         userModified = true;
       }
@@ -713,17 +717,21 @@ int GLWindow::RunMessageLoop()
       sendbuf[1] = _Window->_CenterX;
       sendbuf[2] = _Window->_CenterY;
       sendbuf[3] = _Window->_ZoomLevel;
-      MPI_Allgather(sendbuf, 4, MPI_FLOAT, recvbuf, 4, MPI_FLOAT, MPI_COMM_WORLD);
+      sendbuf[4] = _Window->_XRotation;
+      sendbuf[5] = _Window->_ZRotation;
+      MPI_Allgather(sendbuf, 6, MPI_FLOAT, recvbuf, 6, MPI_FLOAT, MPI_COMM_WORLD);
 
       if(! userModified)
       {
         for(int i = 0; i < commsize; i++)
         {
-          if(recvbuf[i*4] > 0.0f)
+          if(recvbuf[i*6] > 0.0f)
           {
-            _Window->_CenterX = recvbuf[i*4 + 1];
-            _Window->_CenterY = recvbuf[i*4 + 2];
-            _Window->_ZoomLevel = recvbuf[i*4 + 3];
+            _Window->_CenterX = recvbuf[i*6 + 1];
+            _Window->_CenterY = recvbuf[i*6 + 2];
+            _Window->_ZoomLevel = recvbuf[i*6 + 3];
+            _Window->_XRotation = recvbuf[i*6 + 4];
+            _Window->_ZRotation = recvbuf[i*6 + 5];
             _Window->_Dirty = true;
           }
         }
