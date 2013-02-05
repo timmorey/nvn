@@ -13,6 +13,7 @@
 #include <mpi.h>
 
 #include <float.h>
+#include <math.h>
 
 #include <GL/gl.h>
 #include <GL/glu.h>
@@ -126,8 +127,24 @@ int Layer::Render()
                _DataGrid->HasData(sw) &&
                _DataGrid->HasData(nw))
             {
-              this->DrawTriangle(sw, nw, ne);
-              this->DrawTriangle(ne, se, sw);
+              Variant vsw, vse, vne, vnw;
+
+              _DataGrid->GetElemAsVariant(sw, &vsw);
+              _DataGrid->GetElemAsVariant(se, &vse);
+              _DataGrid->GetElemAsVariant(ne, &vne);
+              _DataGrid->GetElemAsVariant(nw, &vnw);
+
+              if(fabs(VariantValueAsFloat(vsw) - VariantValueAsFloat(vne)) <
+                 fabs(VariantValueAsFloat(vnw) - VariantValueAsFloat(vse)))
+              {
+                this->DrawTriangle(sw, nw, ne);
+                this->DrawTriangle(ne, se, sw);
+              }
+              else
+              {
+                this->DrawTriangle(nw, ne, se);
+                this->DrawTriangle(se, sw, nw);
+              }
             }
             else if(_DataGrid->HasData(ne) && 
                     _DataGrid->HasData(se) &&
