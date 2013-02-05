@@ -25,5 +25,7 @@ nvn: $(OBJS)
 
 -include $(CSRC:%.c=%.d)
 
+all: nvn
+
 clean:
 	rm -v -f nvn *.d *.o *~ *.gch
