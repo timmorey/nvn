@@ -5,6 +5,7 @@
 
 #include "DataGrid.hpp"
 
+#define MPICH_SKIP_MPICXX 1
 #include <mpi.h>
 #include <string.h>
 

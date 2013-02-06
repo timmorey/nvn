@@ -8,6 +8,9 @@
 #include "model.hpp"
 #include "nvn.h"
 
+#define MPICH_SKIP_MPICXX 1
+#include <mpi.h>
+
 #include <math.h>
 #include <pthread.h>
 #include <stdio.h>
