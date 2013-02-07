@@ -16,6 +16,8 @@ enum FileFormat
   FileFormatCReSISGrid
 };
 
+class DataGrid;
+
 int DetermineFileFormat(const char* filename, FileFormat* format);
 
 int LoadCReSISASCIIGrid(const char* filename, DataGrid** grid);

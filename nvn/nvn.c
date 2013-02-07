@@ -5,17 +5,13 @@
 
 #include "nvn.h"
 
-#include "gl-window.hpp"
-#include "layer.hpp"
-#include "Loader.hpp"
-
-#define MPICH_SKIP_MPICXX 1
-#include <mpi.h>
-
 #include <getopt.h>
+#include <mpi.h>
 #include <pnetcdf.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 
 /**
@@ -39,16 +35,17 @@ int main(int argc, char* argv[])
   char filename[256], varname[16][256];
   int nvars;
   int quit = 0;
-  MPI_Offset slabstart[NC_MAX_DIMS], slabcount[NC_MAX_DIMS];
+  MPI_Offset slabstart[MAX_DIMS], slabcount[MAX_DIMS];
   const char* str, *str2;
   int pos = 0;
   int commsize, rank;
+  int i;
 
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &commsize);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  for(int i = 0; i < NC_MAX_DIMS; i++)
+  for(i = 0; i < MAX_DIMS; i++)
   {
     slabstart[i] = 0;
     slabcount[i] = -1;
@@ -130,31 +127,29 @@ int main(int argc, char* argv[])
   //  exit(1);
   //}
 
-  DataGrid* grid = 0;
-  FileFormat format = FileFormatUnknown;
-  DetermineFileFormat(filename, &format);
-  printf("format: %d\n", format);
-  switch(format)
-  {
-  case FileFormatCDF1:
-  case FileFormatCDF2:
-  case FileFormatCDF5:
-    LoadPNetCDFGrid(filename, varname[rank], slabstart, slabcount, &grid);
-    break;
-  case FileFormatCReSISGrid:
-    LoadCReSISASCIIGrid(filename, &grid);
-    break;
-  default:
-    fprintf(stderr, "Unrecognized file format\n");
-    break;
-  }
+  NVN_Window vis;
+  NVN_Model model;
+  NVN_DataGrid grid;
+  NVN_Layer layer;
+  NVN_DataGridDescriptor desc;
+  NVN_Err nvnresult;
 
-  if(grid)
-  {
-    GLWindow win("blah", 100, 100, 640, 480, false);
-    win.AddLayer(new Layer(grid));
+  strcpy(desc.Filename, filename);
+  strcpy(desc.Varname, varname[rank]);
+  memcpy(desc.Start, slabstart, MAX_DIMS * sizeof(MPI_Offset));
+  memcpy(desc.Count, slabcount, MAX_DIMS * sizeof(MPI_Offset));
 
-    while(win.IsActive())
+  nvnresult = NVN_LoadDataGrid(desc, &grid);
+
+  if(NVN_NOERR == nvnresult)
+  {
+    nvnresult = NVN_CreateShadedSurfaceGridLayer(grid, &layer);
+    nvnresult = NVN_CreateModel(&model);
+    nvnresult = NVN_AddLayer(model, layer);
+    nvnresult = NVN_CreateWindow("nvn", 100, 100, 640, 480, 0, &vis);
+    nvnresult = NVN_ShowModel(vis, model);
+
+    while(NVN_IsWindowActiveP(vis))
       sleep(1);
   }
   else
