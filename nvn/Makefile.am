@@ -17,4 +17,4 @@ nvn_SOURCES= nvn.cpp
 nvn_LDFLAGS = $(top_srcdir)/libnvn/libnvn.la
 
 # Compiler options for a.out
-nvn_CPPFLAGS = -I$(top_srcdir)/include
+nvn_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/libnvn

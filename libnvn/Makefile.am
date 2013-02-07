@@ -8,7 +8,16 @@ lib_LTLIBRARIES = libnvn.la
 # Build information for each library
 
 # Sources for libnvn
-libnvn_la_SOURCES = color-ramp.c communication-queue.c DataGrid.cpp gl-window.cpp layer.cpp Loader.cpp model.cpp variant.c
+libnvn_la_SOURCES = \
+	color-ramp.c \
+	communication-queue.c \
+	DataGrid.cpp \
+	gl-window.cpp \
+	layer.cpp \
+	Loader.cpp \
+	model.cpp \
+	nvn.cpp \
+	variant.c
 
 # Linker options libnvn
 libnvn_la_LDFLAGS = -lpnetcdf -lGL -lGLU -lpthread -lX11 -lxml2

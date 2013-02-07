@@ -5,6 +5,15 @@
 #ifndef __NVN_H__
 #define __NVN_H__
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+
+#include <stdint.h>
+
+
 /******************************************************************************
  * Constants:
  ******************************************************************************/
@@ -30,5 +39,25 @@
 #define NVN_EINVTYPE       6
 #define NVN_EQFULL         7
 #define NVN_ENOTUNIQUE     8
+
+
+/*****************************************************************************
+ * Public interface
+ *****************************************************************************/
+
+typedef int NVN_Err;
+typedef intptr_t NVN_Window;
+
+NVN_Err NVN_CreateWindow(const char* title,
+			             int x, int y,
+		                 int width, int height,
+		                 int borderless,
+		                 NVN_Window* window);
+
+NVN_Err NVN_DestroyWindow(NVN_Window window);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
