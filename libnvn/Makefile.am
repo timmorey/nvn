@@ -16,6 +16,7 @@ libnvn_la_SOURCES = \
 	Loader.cpp \
 	model.cpp \
 	nvn.cpp \
+	Plot2DLayer.cpp \
 	ShadedSurfaceLayer.cpp \
 	variant.c
 

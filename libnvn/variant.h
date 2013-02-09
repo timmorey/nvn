@@ -5,7 +5,12 @@
 #ifndef __VARIANT_H
 #define __VARIANT_H
 
+#ifdef __cplusplus
+#define MPICH_SKIP_MPICXX
+#endif
+
 #include <libxml/tree.h>
+#include <mpi.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -19,6 +24,7 @@ extern "C"
 typedef enum
 {
   VariantTypeNull   = 0,
+
   VariantTypeByte   = 1,
   VariantTypeChar   = 2,
   VariantTypeShort  = 3,
@@ -29,7 +35,7 @@ typedef enum
 
 typedef struct
 {
-  int Type;
+  VariantType Type;
 
   union
   {
@@ -43,11 +49,13 @@ typedef struct
 
 } Variant;
 
+VariantType MPITypeToVariantType(MPI_Datatype type);
+
 int ParseVariant(xmlNodePtr root, Variant* var);
 
-Variant MaxVariant(int vartype);
+Variant MaxVariant(VariantType vartype);
 
-Variant MinVariant(int vartype);
+Variant MinVariant(VariantType vartype);
 
 int SaveVariant(Variant var, xmlNodePtr* root);
 
@@ -56,6 +64,8 @@ int VariantCompare(Variant v1, Variant v2);
 int VariantInRange(Variant v, Variant min, Variant max);
 
 int VariantIsNearlyEqual(Variant v1, Variant v2);
+
+MPI_Datatype VariantTypeToMPIType(VariantType type);
 
 double VariantValueAsDouble(Variant v);
 

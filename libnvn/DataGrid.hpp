@@ -16,7 +16,8 @@
 class DataGrid
 {
 public:
-  DataGrid(int ndims, MPI_Offset dimlen[], MPI_Datatype type, void* data);
+  DataGrid(int ndims, const MPI_Offset dimlen[], MPI_Datatype type, void* data);
+  ~DataGrid();
 
 public:
   MPI_Offset GetDimLen(int dim) const 
@@ -29,6 +30,7 @@ public:
   int GetPos(const MPI_Offset i[]) const;
   MPI_Datatype GetType() const { return _Type; }
   int GetTypeSize() const { return _TypeSize; }
+  VariantType GetVarType() const { return _VarType; }
   bool HasData(const MPI_Offset i[]) const;
 
 public:
@@ -38,6 +40,7 @@ protected:
   int _NDims;
   MPI_Offset _DimLen[MAX_DIMS];
   MPI_Datatype _Type;
+  VariantType _VarType;
   int _TypeSize;
   void* _Data;
   Variant* _NodataValue;

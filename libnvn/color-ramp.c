@@ -1,67 +1,66 @@
 /**
   color-ramp.c - Created by Timothy Morey on 5/27/2012
-*/
+ */
+
+
+#include "color-ramp.h"
+#include "nvn.h"
+#include "variant.h"
 
 #include <libxml/tree.h>
 #include <string.h>
 
-#include "color-ramp.h"
-#include "variant.h"
-
-#ifdef __WINDOWS__
-#pragma warning(disable:4996)
-#endif
 
 const ColorRamp DefaultColorRamp =
-{
-	ColorRampTypeSmooth,
-	ColorStopValueTypePercentage,
-	{ // Stops
-		{ // ColorStop
-			{ // Value
-				VariantTypeFloat,
-				{ .FloatVal = 0.0f }
-			},
-			0xFFFFFFFF
-		},
-		{ // ColorStop
-			{ // Value
-				VariantTypeFloat,
-				{ .FloatVal = 0.2f }
-			},
-			0xFFFF0000
-		},
-		{ // ColorStop
-			{ // Value
-				VariantTypeFloat,
-				{ .FloatVal = 0.4f }
-			},
-			0xFFFFFF00
-		},
-		{ // ColorStop
-			{ // Value
-				VariantTypeFloat,
-				{ .FloatVal = 0.6f }
-			},
-			0xFF00FF00
-		},
-		{ // ColorStop
-			{ // Value
-				VariantTypeFloat,
-				{ .FloatVal = 0.8f }
-			},
-			0xFF00FFFF
-		},
-		{ // ColorStop
-			{ // Value
-				VariantTypeFloat,
-				{ .FloatVal = 1.0f }
-			},
-			0xFF0000FF
-		}
-	},
-	6
-};
+  {
+    ColorRampTypeSmooth,
+    ColorStopValueTypePercentage,
+    { // Stops
+      { // ColorStop
+        { // Value
+          VariantTypeFloat,
+          { .FloatVal = 0.0f }
+        },
+        0xFFFFFFFF
+      },
+      { // ColorStop
+        { // Value
+          VariantTypeFloat,
+          { .FloatVal = 0.2f }
+        },
+        0xFFFF0000
+      },
+      { // ColorStop
+        { // Value
+          VariantTypeFloat,
+          { .FloatVal = 0.4f }
+        },
+        0xFFFFFF00
+      },
+      { // ColorStop
+        { // Value
+          VariantTypeFloat,
+          { .FloatVal = 0.6f }
+        },
+        0xFF00FF00
+      },
+      { // ColorStop
+        { // Value
+          VariantTypeFloat,
+          { .FloatVal = 0.8f }
+        },
+        0xFF00FFFF
+      },
+      { // ColorStop
+        { // Value
+          VariantTypeFloat,
+          { .FloatVal = 1.0f }
+        },
+        0xFF0000FF
+      }
+    },
+    6
+  };
 
 
 int GetColor(ColorRamp ramp, Variant value, Variant minval, Variant maxval)
@@ -91,7 +90,7 @@ int GetColor(ColorRamp ramp, Variant value, Variant minval, Variant maxval)
       understop--;
 
     if(understop == overstop ||
-      ColorRampTypeStepped == ramp.RampType)
+        ColorRampTypeStepped == ramp.RampType)
     {
       retval = ramp.Stops[understop].Color;
     }
@@ -106,13 +105,13 @@ int GetColor(ColorRamp ramp, Variant value, Variant minval, Variant maxval)
         x = (v - underval) / (overval - underval);
 
       ((unsigned char*)&retval)[RED] = undercolor[RED] + 
-        (int)(x * ((double)overcolor[RED] - (double)undercolor[RED]));
+          (int)(x * ((double)overcolor[RED] - (double)undercolor[RED]));
       ((unsigned char*)&retval)[GREEN] = undercolor[GREEN] + 
-        (int)(x * ((double)overcolor[GREEN] - (double)undercolor[GREEN]));
+          (int)(x * ((double)overcolor[GREEN] - (double)undercolor[GREEN]));
       ((unsigned char*)&retval)[BLUE] = undercolor[BLUE] + 
-        (int)(x * ((double)overcolor[BLUE] - (double)undercolor[BLUE]));
+          (int)(x * ((double)overcolor[BLUE] - (double)undercolor[BLUE]));
       ((unsigned char*)&retval)[ALPHA] = undercolor[ALPHA] + 
-        (int)(x * ((double)overcolor[ALPHA] - (double)undercolor[ALPHA]));
+          (int)(x * ((double)overcolor[ALPHA] - (double)undercolor[ALPHA]));
     }
   }
 
@@ -151,22 +150,22 @@ int InsertColorStop(ColorRamp* ramp, ColorStop stop)
 
 char GetR(int color)
 {
-	return ((char*)&color)[RED];
+  return ((char*)&color)[RED];
 }
 
 char GetG(int color)
 {
-	return ((char*)&color)[GREEN];
+  return ((char*)&color)[GREEN];
 }
 
 char GetB(int color)
 {
-	return ((char*)&color)[BLUE];
+  return ((char*)&color)[BLUE];
 }
 
 char GetA(int color)
 {
-	return ((char*)&color)[ALPHA];
+  return ((char*)&color)[ALPHA];
 }
 
 int ParseColorRamp(xmlNodePtr root, ColorRamp* ramp)
@@ -182,7 +181,7 @@ int ParseColorRamp(xmlNodePtr root, ColorRamp* ramp)
     value = xmlGetProp(root, BAD_CAST "RampType");
     ramp->RampType = (ColorRampType)atoi((char*)value);
     xmlFree(value);
-    
+
     value = xmlGetProp(root, BAD_CAST "StopValueType");
     ramp->StopValueType = (ColorStopValueType)atoi((char*)value);
     xmlFree(value);

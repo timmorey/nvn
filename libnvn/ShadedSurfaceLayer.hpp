@@ -9,9 +9,13 @@
 #define __SHADEDSURFACELAYER_HPP__
 
 
-#include "DataGrid.hpp"
+#include "color-ramp.h"
+#include "variant.h"
+
 #include "Layer.hpp"
 
+
+class DataGrid;
 
 class ShadedSurfaceLayer : public Layer
 {
@@ -23,9 +27,9 @@ public:
   ColorRamp& Ramp() { return _Ramp; }
 
 public:
-  virtual int GetWidth() const { return _DataGrid ? _DataGrid->GetDimLen(0) : -1; }
-  virtual int GetHeight() const { return _DataGrid ? _DataGrid->GetDimLen(1) : -1; }
-  virtual int GetDepth() const { return 0; }
+  virtual float GetWidth() const;
+  virtual float GetHeight() const;
+  virtual float GetDepth() const;
 
 public:
   virtual int Render();

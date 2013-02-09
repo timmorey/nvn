@@ -1,8 +1,10 @@
 /**
    variant.c - Created by Timothy Morey on 6/1/2012
-*/
+ */
 
-#define MPICH_SKIP_MPICXX
+#include "nvn.h"
+#include "variant.h"
+
 #include <mpi.h>
 
 #include <float.h>
@@ -11,19 +13,39 @@
 #include <math.h>
 #include <string.h>
 
-#include "variant.h"
 
-#ifdef __WINDOWS__
-#pragma warning(disable:4996)
-#endif
+VariantType MPITypeToVariantType(MPI_Datatype type)
+{
+  switch(type)
+  {
+  case MPI_BYTE:
+    return VariantTypeByte;
 
-#define EPSILON 1e-6
+  case MPI_CHAR:
+    return VariantTypeChar;
+
+  case MPI_SHORT:
+    return VariantTypeShort;
+
+  case MPI_DOUBLE:
+    return VariantTypeDouble;
+
+  case MPI_FLOAT:
+    return VariantTypeFloat;
+
+  case MPI_INT:
+    return VariantTypeInt;
+
+  default:
+    return VariantTypeNull;
+  }
+}
 
 int ParseVariant(xmlNodePtr root, Variant* var)
 {
   int retval = 0;
   xmlChar* value;
-  
+
   if(root && var)
   {
     memset(var, 0, sizeof(Variant));
@@ -31,7 +53,7 @@ int ParseVariant(xmlNodePtr root, Variant* var)
     value = xmlGetProp(root, BAD_CAST "Type");
     var->Type = atoi((char*)value);
     xmlFree(value);
-    
+
     value = xmlGetProp(root, BAD_CAST "Value");
     switch(var->Type)
     {
@@ -53,87 +75,75 @@ int ParseVariant(xmlNodePtr root, Variant* var)
     }
     xmlFree(value);
   }
-  
+
   return retval;
 }
 
-Variant MaxVariant(MPI_Datatype vartype)
+Variant MaxVariant(VariantType vartype)
 {
-  Variant retval = { 0, 0 };
-  
+  Variant retval = { vartype, 0 };
+
   switch(vartype)
   {
-  case MPI_BYTE:
-    retval.Type = VariantTypeByte;
+  case VariantTypeByte:
     retval.Value.ByteVal = UCHAR_MAX;
     break;
-    
-  case MPI_CHAR:
-    retval.Type = VariantTypeChar;
+
+  case VariantTypeChar:
     retval.Value.CharVal = CHAR_MAX;
     break;
-    
-  case MPI_SHORT:
-    retval.Type = VariantTypeShort;
+
+  case VariantTypeShort:
     retval.Value.ShortVal = SHRT_MAX;
     break;
-    
-  case MPI_DOUBLE:
-    retval.Type = VariantTypeDouble;
+
+  case VariantTypeDouble:
     retval.Value.DoubleVal = DBL_MAX;
     break;
-    
-  case MPI_FLOAT:
-    retval.Type = VariantTypeFloat;
+
+  case VariantTypeFloat:
     retval.Value.FloatVal = FLT_MAX;
     break;
-    
-  case MPI_INT:
-    retval.Type = VariantTypeInt;
+
+  case VariantTypeInt:
     retval.Value.IntVal = INT_MAX;
     break;
   }
-  
+
   return retval;
 }
 
-Variant MinVariant(MPI_Datatype vartype)
+Variant MinVariant(VariantType vartype)
 {
-  Variant retval = { 0, 0 };
-  
+  Variant retval = { vartype, 0 };
+
   switch(vartype)
   {
-  case MPI_BYTE:
-    retval.Type = VariantTypeByte;
+  case VariantTypeByte:
     retval.Value.ByteVal = 0;
     break;
-    
-  case MPI_CHAR:
-    retval.Type = VariantTypeChar;
+
+  case VariantTypeChar:
     retval.Value.CharVal = CHAR_MIN;
     break;
-    
-  case MPI_SHORT:
-    retval.Type = VariantTypeShort;
+
+  case VariantTypeShort:
     retval.Value.ShortVal = SHRT_MIN;
     break;
-    
-  case MPI_DOUBLE:
-    retval.Type = VariantTypeDouble;
+
+  case VariantTypeDouble:
     retval.Value.DoubleVal = DBL_MIN;
     break;
-    
-  case MPI_FLOAT:
-    retval.Type = VariantTypeFloat;
+
+  case VariantTypeFloat:
     retval.Value.FloatVal = FLT_MIN;
     break;
-    
-  case MPI_INT:
-    retval.Type = VariantTypeInt;
+
+  case VariantTypeInt:
     retval.Value.IntVal = INT_MIN;
     break;
   }
-  
+
   return retval;
 }
 
@@ -149,7 +159,7 @@ int SaveVariant(Variant var, xmlNodePtr* root)
 
     sprintf(temp, "%d", var.Type);
     xmlNewProp(*root, BAD_CAST "Type", BAD_CAST temp);
-    
+
     switch(var.Type)
     {
     case VariantTypeByte:
@@ -160,9 +170,9 @@ int SaveVariant(Variant var, xmlNodePtr* root)
       sprintf(temp, "%hd", var.Value.ShortVal); break;
     case VariantTypeDouble:
       sprintf(temp, "%f", var.Value.DoubleVal); break;
-		case VariantTypeFloat:
+    case VariantTypeFloat:
       sprintf(temp, "%f", var.Value.FloatVal); break;
-		case VariantTypeInt:
+    case VariantTypeInt:
       sprintf(temp, "%d", var.Value.IntVal); break;
     default:
       sprintf(temp, "%d", "unsupported type");
@@ -170,10 +180,10 @@ int SaveVariant(Variant var, xmlNodePtr* root)
       break;
     }
     xmlNewProp(*root, BAD_CAST "Value", BAD_CAST temp);
-    
+
     retval = 1;
   }
-  
+
   return retval;
 }
 
@@ -185,41 +195,41 @@ int VariantCompare(Variant v1, Variant v2)
   {
     switch(v1.Type)
     {
-		case VariantTypeByte:
+    case VariantTypeByte:
       if(v1.Value.ByteVal < v2.Value.ByteVal)
         retval = -1;
       else if(v1.Value.ByteVal > v2.Value.ByteVal)
         retval = 1;
       break;
-      
-		case VariantTypeChar:
+
+    case VariantTypeChar:
       if(v1.Value.CharVal < v2.Value.CharVal)
         retval = -1;
       else if(v1.Value.CharVal > v2.Value.CharVal)
         retval = 1;
       break;
-      
-		case VariantTypeShort:
+
+    case VariantTypeShort:
       if(v1.Value.ShortVal < v2.Value.ShortVal)
         retval = -1;
       else if(v1.Value.ShortVal > v2.Value.ShortVal)
         retval = 1;
       break;
-      
+
     case VariantTypeDouble:
       if(v1.Value.DoubleVal < v2.Value.DoubleVal)
         retval = -1;
       else if(v1.Value.DoubleVal > v2.Value.DoubleVal)
         retval = 1;
       break;
-      
-		case VariantTypeFloat:
+
+    case VariantTypeFloat:
       if(v1.Value.FloatVal < v2.Value.FloatVal)
         retval = -1;
       else if(v1.Value.FloatVal > v2.Value.FloatVal)
         retval = 1;
       break;
-      
+
     case VariantTypeInt:
       if(v1.Value.IntVal < v2.Value.IntVal)
         retval = -1;
@@ -228,27 +238,27 @@ int VariantCompare(Variant v1, Variant v2)
       break;
     }
   }
-  
+
   return retval;
 }
 
 int VariantInRange(Variant v, Variant min, Variant max)
 {
   int retval = 0;
-  
+
   if(v.Type == min.Type && min.Type == max.Type)
   {
     retval = 0 <= VariantCompare(max, v) &&
-      0 <= VariantCompare(v, min);
+        0 <= VariantCompare(v, min);
   }
-  
+
   return retval;
 }
 
 int VariantIsNearlyEqual(Variant v1, Variant v2)
 {
   int retval = 0;
-  
+
   if(v1.Type == v2.Type)
   {
     switch(v1.Type)
@@ -257,24 +267,24 @@ int VariantIsNearlyEqual(Variant v1, Variant v2)
       if(v1.Value.ByteVal == v2.Value.ByteVal)
         retval = 1;
       break;
-      
+
     case VariantTypeChar:
       if(v1.Value.CharVal == v2.Value.CharVal)
         retval = 1;
       break;
-      
+
     case VariantTypeShort:
       if(v1.Value.ShortVal == v2.Value.ShortVal)
         retval = 1;
       break;
-      
+
     case VariantTypeDouble:
-      if(fabs(v1.Value.DoubleVal - v2.Value.DoubleVal) < EPSILON)
+      if(fabs(v1.Value.DoubleVal - v2.Value.DoubleVal) < EPSILOND)
         retval = 1;
       break;
-      
+
     case VariantTypeFloat:
-      if(fabsf(v1.Value.FloatVal - v2.Value.FloatVal) < EPSILON)
+      if(fabsf(v1.Value.FloatVal - v2.Value.FloatVal) < EPSILONF)
         retval = 1;
       break;
 
@@ -284,14 +294,41 @@ int VariantIsNearlyEqual(Variant v1, Variant v2)
       break;
     }
   }
-  
+
   return retval;
+}
+
+MPI_Datatype VariantTypeToMPIType(VariantType type)
+{
+  switch(type)
+  {
+  case VariantTypeByte:
+    return MPI_BYTE;
+
+  case VariantTypeChar:
+    return MPI_CHAR;
+
+  case VariantTypeShort:
+    return MPI_SHORT;
+
+  case VariantTypeDouble:
+    return MPI_DOUBLE;
+
+  case VariantTypeFloat:
+    return MPI_FLOAT;
+
+  case VariantTypeInt:
+    return MPI_INT;
+
+  default:
+    return 0;
+  }
 }
 
 double VariantValueAsDouble(Variant v)
 {
   double retval = 0.0;
-  
+
   switch(v.Type)
   {
   case VariantTypeByte:
@@ -314,7 +351,7 @@ double VariantValueAsDouble(Variant v)
 float VariantValueAsFloat(Variant v)
 {
   float retval = 0.0;
-  
+
   switch(v.Type)
   {
   case VariantTypeByte:

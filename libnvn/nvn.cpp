@@ -5,10 +5,12 @@
 
 #include "nvn.h"
 
+#include "DataGrid.hpp"
 #include "gl-window.hpp"
-#include "ShadedSurfaceLayer.hpp"
 #include "Loader.hpp"
 #include "model.hpp"
+#include "Plot2DLayer.hpp"
+#include "ShadedSurfaceLayer.hpp"
 
 
 /*****************************************************************************
@@ -33,6 +35,26 @@ extern "C" NVN_Err NVN_AddLayer(NVN_Model model, NVN_Layer layer)
   return retval;
 }
 
+extern "C" NVN_Err NVN_CreateDataGrid(int ndims,
+                                      const MPI_Offset dimlen[],
+                                      MPI_Datatype type,
+                                      void* data,
+                                      NVN_DataGrid* grid)
+{
+  NVN_Err retval = NVN_NOERR;
+
+  if(grid && data)
+  {
+    *grid = (NVN_DataGrid)new DataGrid(ndims, dimlen, type, data);
+  }
+  else
+  {
+    retval = NVN_EINVARGS;
+  }
+
+  return retval;
+}
+
 extern "C" NVN_Err NVN_CreateModel(NVN_Model* model)
 {
   NVN_Err retval = NVN_NOERR;
@@ -40,6 +62,23 @@ extern "C" NVN_Err NVN_CreateModel(NVN_Model* model)
   if(model)
   {
     *model = (NVN_Model)new Model();
+  }
+  else
+  {
+    retval = NVN_EINVARGS;
+  }
+
+  return retval;
+}
+
+extern "C" NVN_Err NVN_CreatePlot2DLayer(NVN_DataGrid x, NVN_DataGrid y,
+                                         NVN_Layer* layer)
+{
+  NVN_Err retval = NVN_NOERR;
+
+  if(layer)
+  {
+    *layer = (NVN_Layer)new Plot2DLayer((DataGrid*)x, (DataGrid*)y);
   }
   else
   {

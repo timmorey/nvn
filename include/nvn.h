@@ -26,6 +26,8 @@ extern "C"
 #define MAX_PATH 256
 
 #define DEG2RADF 0.0174532925f
+#define EPSILONF 1e-6f
+#define EPSILOND 1e-12
 
 
 /******************************************************************************
@@ -71,7 +73,16 @@ typedef struct
 
 NVN_Err NVN_AddLayer(NVN_Model model, NVN_Layer layer);
 
+NVN_Err NVN_CreateDataGrid(int ndims,
+                           const MPI_Offset dimlen[],
+                           MPI_Datatype type,
+                           void* data,
+                           NVN_DataGrid* grid);
+
 NVN_Err NVN_CreateModel(NVN_Model* model);
+
+NVN_Err NVN_Create2DPlotLayer(NVN_DataGrid x, NVN_DataGrid y,
+                              NVN_Layer* layer);
 
 NVN_Err NVN_CreateShadedSurfaceLayer(NVN_DataGrid grid, NVN_Layer* layer);
 
@@ -94,6 +105,13 @@ NVN_Err NVN_ShowModel(NVN_Window window, NVN_Model model);
 
 int NVN_IsWindowActiveP(NVN_Window window);
 
+
+/*****************************************************************************
+ * Macros:
+ *****************************************************************************/
+
+#define MIN(x,y) x < y ? x : y
+#define MAX(x,y) x > y ? x : y
 
 #ifdef __cplusplus
 }

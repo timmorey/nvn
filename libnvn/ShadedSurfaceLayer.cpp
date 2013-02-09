@@ -33,8 +33,8 @@ ShadedSurfaceLayer::ShadedSurfaceLayer(DataGrid* grid)
   {
     Variant value;
     MPI_Offset pos[MAX_DIMS];
-    _MinVal = MaxVariant(_DataGrid->GetType());
-    _MaxVal = MinVariant(_DataGrid->GetType());
+    _MinVal = MaxVariant(MPITypeToVariantType(_DataGrid->GetType()));
+    _MaxVal = MinVariant(MPITypeToVariantType(_DataGrid->GetType()));
     for(pos[0] = 0; pos[0] < this->GetWidth(); pos[0]++)
     {
       for(pos[1] = 0; pos[1] < this->GetHeight(); pos[1]++)
@@ -62,39 +62,28 @@ ShadedSurfaceLayer::~ShadedSurfaceLayer()
   }
 }
 
-int ShadedSurfaceLayer::DrawTriangle(MPI_Offset pt1[], MPI_Offset pt2[], MPI_Offset pt3[]) const
+float ShadedSurfaceLayer::GetWidth() const
 {
-  int retval = NVN_NOERR;
-  Variant v1, v2, v3;
-  int c1, c2, c3;
-  float x1, x2, x3;
-  float y1, y2, y3;
-  float z1, z2, z3;
+  if(_DataGrid)
+    return (float)_DataGrid->GetDimLen(0);
+  else
+    return 0.0f;
+}
 
-  _DataGrid->GetElemAsVariant(pt1, &v1);
-  _DataGrid->GetElemAsVariant(pt2, &v2);
-  _DataGrid->GetElemAsVariant(pt3, &v3);
+float ShadedSurfaceLayer::GetHeight() const
+{
+  if(_DataGrid)
+    return (float)_DataGrid->GetDimLen(1);
+  else
+    return 0.0f;
+}
 
-  c1 = GetColor(_Ramp, v1, _MinVal, _MaxVal);
-  c2 = GetColor(_Ramp, v2, _MinVal, _MaxVal);
-  c3 = GetColor(_Ramp, v3, _MinVal, _MaxVal);
-
-  x1 = (float)pt1[0];  y1 = (float)pt1[1];  z1 = VariantValueAsFloat(v1) / 100.0f;
-  x2 = (float)pt2[0];  y2 = (float)pt2[1];  z2 = VariantValueAsFloat(v2) / 100.0f;
-  x3 = (float)pt3[0];  y3 = (float)pt3[1];  z3 = VariantValueAsFloat(v3) / 100.0f;
-
-  glNormal3f(((y2-y1)*(z3-z1)) - ((z2-z1)*(y3-y1)),
-             ((z2-z1)*(x3-x1)) - ((x2-x1)*(z3-z1)),
-             ((x2-x1)*(y3-y1)) - ((y2-y1)*(x3-x1)));
-
-  glColor4ub(GetR(c1), GetG(c1), GetB(c1), GetA(c1));
-  glVertex3f(x1, y1, z1);
-
-  glColor4ub(GetR(c2), GetG(c2), GetB(c2), GetA(c2));
-  glVertex3f(x2, y2, z2);
-
-  glColor4ub(GetR(c3), GetG(c3), GetB(c3), GetA(c3));
-  glVertex3f(x3, y3, z3);
+float ShadedSurfaceLayer::GetDepth() const
+{
+  if(_DataGrid)
+    return VariantValueAsFloat(_MaxVal) - VariantValueAsFloat(_MinVal);
+  else
+    return 0.0f;
 }
 
 int ShadedSurfaceLayer::Render()
@@ -249,6 +238,45 @@ int ShadedSurfaceLayer::Render()
   //   glVertex3f(0.0f, (float)dataheight, 0.0f);
   // }
   // glEnd();
+}
 
+int ShadedSurfaceLayer::DrawTriangle(MPI_Offset pt1[], MPI_Offset pt2[], MPI_Offset pt3[]) const
+{
+  int retval = NVN_NOERR;
+  Variant v1, v2, v3;
+  int c1, c2, c3;
+  float x1, x2, x3;
+  float y1, y2, y3;
+  float z1, z2, z3;
+  float ux, uy, uz;
+  float vx, vy, vz;
 
+  _DataGrid->GetElemAsVariant(pt1, &v1);
+  _DataGrid->GetElemAsVariant(pt2, &v2);
+  _DataGrid->GetElemAsVariant(pt3, &v3);
+
+  c1 = GetColor(_Ramp, v1, _MinVal, _MaxVal);
+  c2 = GetColor(_Ramp, v2, _MinVal, _MaxVal);
+  c3 = GetColor(_Ramp, v3, _MinVal, _MaxVal);
+
+  x1 = (float)pt1[0];  y1 = (float)pt1[1];  z1 = VariantValueAsFloat(v1) / 100.0f;
+  x2 = (float)pt2[0];  y2 = (float)pt2[1];  z2 = VariantValueAsFloat(v2) / 100.0f;
+  x3 = (float)pt3[0];  y3 = (float)pt3[1];  z3 = VariantValueAsFloat(v3) / 100.0f;
+
+  ux = x2 - x1;  vx = x3 - x1;
+  uy = y2 - y1;  vy = y3 - y1;
+  uz = z2 - z1;  vz = z3 - z1;
+
+  glNormal3f(uy*vz - uz*vy,
+             uz*vx - ux*vz,
+             ux*vy - uy*vx);
+
+  glColor4ub(GetR(c1), GetG(c1), GetB(c1), GetA(c1));
+  glVertex3f(x1, y1, z1);
+
+  glColor4ub(GetR(c2), GetG(c2), GetB(c2), GetA(c2));
+  glVertex3f(x2, y2, z2);
+
+  glColor4ub(GetR(c3), GetG(c3), GetB(c3), GetA(c3));
+  glVertex3f(x3, y3, z3);
 }
