@@ -143,7 +143,7 @@ int main(int argc, char* argv[])
 
   if(NVN_NOERR == nvnresult)
   {
-    nvnresult = NVN_CreateShadedSurfaceGridLayer(grid, &layer);
+    nvnresult = NVN_CreateShadedSurfaceLayer(grid, &layer);
     nvnresult = NVN_CreateModel(&model);
     nvnresult = NVN_AddLayer(model, layer);
     nvnresult = NVN_CreateWindow("nvn", 100, 100, 640, 480, 0, &vis);

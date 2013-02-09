@@ -4,7 +4,7 @@
 
 #include "communication-queue.h"
 #include "gl-window.hpp"
-#include "layer.hpp"
+#include "Layer.hpp"
 #include "model.hpp"
 #include "nvn.h"
 

@@ -73,7 +73,7 @@ NVN_Err NVN_AddLayer(NVN_Model model, NVN_Layer layer);
 
 NVN_Err NVN_CreateModel(NVN_Model* model);
 
-NVN_Err NVN_CreateShadedSurfaceGridLayer(NVN_DataGrid grid, NVN_Layer* layer);
+NVN_Err NVN_CreateShadedSurfaceLayer(NVN_DataGrid grid, NVN_Layer* layer);
 
 NVN_Err NVN_CreateWindow(const char* title,
 			             int x, int y,

@@ -2,7 +2,7 @@
 	 model.cpp - Created by Timothy Morey on 1/15/2013
  */
 
-#include "layer.hpp"
+#include "Layer.hpp"
 #include "model.hpp"
 
 int Model::GetWidth() const

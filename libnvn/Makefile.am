@@ -13,10 +13,10 @@ libnvn_la_SOURCES = \
 	communication-queue.c \
 	DataGrid.cpp \
 	gl-window.cpp \
-	layer.cpp \
 	Loader.cpp \
 	model.cpp \
 	nvn.cpp \
+	ShadedSurfaceLayer.cpp \
 	variant.c
 
 # Linker options libnvn

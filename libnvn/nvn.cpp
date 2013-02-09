@@ -6,7 +6,7 @@
 #include "nvn.h"
 
 #include "gl-window.hpp"
-#include "layer.hpp"
+#include "ShadedSurfaceLayer.hpp"
 #include "Loader.hpp"
 #include "model.hpp"
 
@@ -49,14 +49,14 @@ extern "C" NVN_Err NVN_CreateModel(NVN_Model* model)
   return retval;
 }
 
-extern "C" NVN_Err NVN_CreateShadedSurfaceGridLayer(NVN_DataGrid grid, NVN_Layer* layer)
+extern "C" NVN_Err NVN_CreateShadedSurfaceLayer(NVN_DataGrid grid, NVN_Layer* layer)
 {
   NVN_Err retval = NVN_NOERR;
 
   if(grid && layer)
   {
     DataGrid* g = (DataGrid*)grid;
-    *layer = (NVN_Layer)new Layer(g);
+    *layer = (NVN_Layer)new ShadedSurfaceLayer(g);
   }
   else
   {

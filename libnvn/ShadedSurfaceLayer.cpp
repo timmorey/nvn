@@ -1,13 +1,13 @@
 /**
-	 layer.cpp - Created by Timothy Morey on 1/12/2013
-*/
+	 ShadedSurfaceLayer.cpp - Created by Timothy Morey on 1/12/2013
+ */
 
 #include "color-ramp.h"
-#include "layer.hpp"
 #include "nvn.h"
 #include "variant.h"
 
 #include "DataGrid.hpp"
+#include "ShadedSurfaceLayer.hpp"
 
 #define MPICH_SKIP_MPICXX 1
 #include <mpi.h>
@@ -18,15 +18,16 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 
-Layer::Layer(DataGrid* grid)
-	: _DataGrid(grid),
-		_Ramp(DefaultColorRamp),
-		_TexBitmap(0),
-    _TexWidth(0),
-    _TexHeight(0),
-    _TextureID(-1),
-    _DisplayList(-1),
-    _Compiled(false)
+ShadedSurfaceLayer::ShadedSurfaceLayer(DataGrid* grid)
+: Layer(),
+  _DataGrid(grid),
+  _Ramp(DefaultColorRamp),
+  _TexBitmap(0),
+  _TexWidth(0),
+  _TexHeight(0),
+  _TextureID(-1),
+  _DisplayList(-1),
+  _Compiled(false)
 {
   if(_DataGrid)
   {
@@ -52,16 +53,16 @@ Layer::Layer(DataGrid* grid)
   }
 }
 
-Layer::~Layer()
+ShadedSurfaceLayer::~ShadedSurfaceLayer()
 {
-	if(_TexBitmap)
-	{
-		free(_TexBitmap);
-		_TexBitmap = 0;
-	}
+  if(_TexBitmap)
+  {
+    free(_TexBitmap);
+    _TexBitmap = 0;
+  }
 }
 
-int Layer::DrawTriangle(MPI_Offset pt1[], MPI_Offset pt2[], MPI_Offset pt3[]) const
+int ShadedSurfaceLayer::DrawTriangle(MPI_Offset pt1[], MPI_Offset pt2[], MPI_Offset pt3[]) const
 {
   int retval = NVN_NOERR;
   Variant v1, v2, v3;
@@ -85,7 +86,7 @@ int Layer::DrawTriangle(MPI_Offset pt1[], MPI_Offset pt2[], MPI_Offset pt3[]) co
   glNormal3f(((y2-y1)*(z3-z1)) - ((z2-z1)*(y3-y1)),
              ((z2-z1)*(x3-x1)) - ((x2-x1)*(z3-z1)),
              ((x2-x1)*(y3-y1)) - ((y2-y1)*(x3-x1)));
-  
+
   glColor4ub(GetR(c1), GetG(c1), GetB(c1), GetA(c1));
   glVertex3f(x1, y1, z1);
 
@@ -94,11 +95,9 @@ int Layer::DrawTriangle(MPI_Offset pt1[], MPI_Offset pt2[], MPI_Offset pt3[]) co
 
   glColor4ub(GetR(c3), GetG(c3), GetB(c3), GetA(c3));
   glVertex3f(x3, y3, z3);
-
-  int color;
 }
 
-int Layer::Render()
+int ShadedSurfaceLayer::Render()
 {
   if(! _Compiled)
   {
@@ -123,9 +122,9 @@ int Layer::Render()
               sw[1]++, se[1]++, ne[1]++, nw[1]++)
           {        
             if(_DataGrid->HasData(ne) && 
-               _DataGrid->HasData(se) &&
-               _DataGrid->HasData(sw) &&
-               _DataGrid->HasData(nw))
+                _DataGrid->HasData(se) &&
+                _DataGrid->HasData(sw) &&
+                _DataGrid->HasData(nw))
             {
               Variant vsw, vse, vne, vnw;
 
@@ -135,7 +134,7 @@ int Layer::Render()
               _DataGrid->GetElemAsVariant(nw, &vnw);
 
               if(fabs(VariantValueAsFloat(vsw) - VariantValueAsFloat(vne)) <
-                 fabs(VariantValueAsFloat(vnw) - VariantValueAsFloat(vse)))
+                  fabs(VariantValueAsFloat(vnw) - VariantValueAsFloat(vse)))
               {
                 this->DrawTriangle(sw, nw, ne);
                 this->DrawTriangle(ne, se, sw);
@@ -147,26 +146,26 @@ int Layer::Render()
               }
             }
             else if(_DataGrid->HasData(ne) && 
-                    _DataGrid->HasData(se) &&
-                    _DataGrid->HasData(sw))
+                _DataGrid->HasData(se) &&
+                _DataGrid->HasData(sw))
             {
               this->DrawTriangle(sw, se, ne);
             }
             else if(_DataGrid->HasData(ne) && 
-                    _DataGrid->HasData(se) &&
-                    _DataGrid->HasData(nw))
+                _DataGrid->HasData(se) &&
+                _DataGrid->HasData(nw))
             {
               this->DrawTriangle(se, ne, nw);
             }
             else if (_DataGrid->HasData(ne) && 
-                     _DataGrid->HasData(sw) &&
-                     _DataGrid->HasData(nw))
+                _DataGrid->HasData(sw) &&
+                _DataGrid->HasData(nw))
             {
               this->DrawTriangle(ne, nw, sw);
             }
             else if(_DataGrid->HasData(se) &&
-                    _DataGrid->HasData(sw) &&
-                    _DataGrid->HasData(nw))
+                _DataGrid->HasData(sw) &&
+                _DataGrid->HasData(nw))
             {
               this->DrawTriangle(se, sw, nw);
             }
@@ -185,24 +184,24 @@ int Layer::Render()
   // int datawidth = this->GetWidth();
   // int dataheight = this->GetHeight();
 
-	// if(0 == _TexBitmap)
-	// {
-	// 	_TexWidth = 1;
-	// 	_TexHeight = 1;
+  // if(0 == _TexBitmap)
+  // {
+  // 	_TexWidth = 1;
+  // 	_TexHeight = 1;
 
-	// 	while(_TexWidth < datawidth)
-	// 		_TexWidth *= 2;
+  // 	while(_TexWidth < datawidth)
+  // 		_TexWidth *= 2;
 
-	// 	while(_TexHeight < dataheight)
-	// 		_TexHeight *= 2;
+  // 	while(_TexHeight < dataheight)
+  // 		_TexHeight *= 2;
 
-	// 	_TexBitmap = (char*)malloc(_TexWidth * _TexHeight * 4);
-	// 	Variant value;
+  // 	_TexBitmap = (char*)malloc(_TexWidth * _TexHeight * 4);
+  // 	Variant value;
   //   MPI_Offset pos[MAX_DIMS];
-	// 	for(pos[0] = 0; pos[0] < datawidth; pos[0]++)
-	// 	{
-	// 		for(pos[1] = 0; pos[1] < dataheight; pos[1]++)
-	// 		{
+  // 	for(pos[0] = 0; pos[0] < datawidth; pos[0]++)
+  // 	{
+  // 		for(pos[1] = 0; pos[1] < dataheight; pos[1]++)
+  // 		{
   //       if(_DataGrid->HasData(pos))
   //       {
   //         _DataGrid->GetElemAsVariant(pos, &value);
@@ -213,43 +212,43 @@ int Layer::Render()
   //       {
   //         ((int*)_TexBitmap)[pos[1] * _TexWidth + pos[0]] = 0x00000000;
   //       }
-	// 		}
-	// 	}
+  // 		}
+  // 	}
 
-	// 	glGenTextures(1, &_TextureID);
-	// 	glBindTexture(GL_TEXTURE_2D, _TextureID);
-	// 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-	// 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-	// 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	// 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	// 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	// 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	// 	glTexImage2D(GL_TEXTURE_2D, 0, 4, 
-	// 							 _TexWidth, _TexHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, _TexBitmap);
+  // 	glGenTextures(1, &_TextureID);
+  // 	glBindTexture(GL_TEXTURE_2D, _TextureID);
+  // 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+  // 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+  // 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  // 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  // 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  // 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  // 	glTexImage2D(GL_TEXTURE_2D, 0, 4,
+  // 							 _TexWidth, _TexHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, _TexBitmap);
 
   //   // TODO: we're done with _TexBitmap now, and might as well free it, but then
   //   // we'd need a different flag telling us if we need to create the texture...
-	// }
-	
-	// glBindTexture(GL_TEXTURE_2D, _TextureID);
-	// glEnable(GL_TEXTURE_2D);
-	
-	// glBegin(GL_QUADS);
+  // }
+
+  // glBindTexture(GL_TEXTURE_2D, _TextureID);
+  // glEnable(GL_TEXTURE_2D);
+
+  // glBegin(GL_QUADS);
   // {
   //   glTexCoord2f(0.0f, 0.0f);
   //   glVertex3f(0.0f, 0.0f, 0.0f);
-    
+
   //   glTexCoord2f((float)datawidth / (float)_TexWidth, 0.0f);
   //   glVertex3f((float)datawidth, 0.0f, 0.0f);
 
   //   glTexCoord2f((float)datawidth / (float)_TexWidth, 
-	// 						 (float)dataheight / (float)_TexHeight);
+  // 						 (float)dataheight / (float)_TexHeight);
   //   glVertex3f((float)datawidth, (float)dataheight, 0.0f);
-    
+
   //   glTexCoord2f(0.0f, (float)dataheight / (float)_TexHeight);
   //   glVertex3f(0.0f, (float)dataheight, 0.0f);
   // }
-	// glEnd();
+  // glEnd();
 
-  
+
 }
