@@ -14,9 +14,10 @@ libnvn_la_SOURCES = \
 	DataGrid.cpp \
 	gl-window.cpp \
 	Loader.cpp \
-	model.cpp \
+	Model.cpp \
 	nvn.cpp \
 	Plot2DLayer.cpp \
+	ReferenceFrameLayer.cpp \
 	ShadedSurfaceLayer.cpp \
 	variant.c
 

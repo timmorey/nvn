@@ -26,9 +26,7 @@ public:
   virtual ~Plot2DLayer();
 
 public:
-  virtual float GetWidth() const;
-  virtual float GetHeight() const;
-  virtual float GetDepth() const;
+  virtual NVN_BBox GetBounds() const;
 
 public:
   virtual int Render();

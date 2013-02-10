@@ -5,9 +5,8 @@
 #ifndef __VARIANT_H
 #define __VARIANT_H
 
-#ifdef __cplusplus
-#define MPICH_SKIP_MPICXX
-#endif
+
+#include "nvn.h"
 
 #include <libxml/tree.h>
 #include <mpi.h>

@@ -18,9 +18,7 @@ public:
   virtual int Render() = 0;
 
 public:
-  virtual float GetWidth() const = 0;
-  virtual float GetHeight() const = 0;
-  virtual float GetDepth() const = 0;
+  virtual NVN_BBox GetBounds() const = 0;
 
 };
 

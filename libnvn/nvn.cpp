@@ -8,9 +8,34 @@
 #include "DataGrid.hpp"
 #include "gl-window.hpp"
 #include "Loader.hpp"
-#include "model.hpp"
+#include "Model.hpp"
 #include "Plot2DLayer.hpp"
 #include "ShadedSurfaceLayer.hpp"
+
+#include <float.h>
+#include <string.h>
+
+
+const char* g_ErrMsg[NVN_NUMERRS] =
+{
+  "No error",
+  "Unspecified error",
+  "Invalid arguments",
+  "Unexpected null pointer",
+  "Not initialized",
+  "GLX Error",
+  "X11 Error",
+  "Invalid type",
+  "Queue full",
+  "Not unique",
+  "Unknown format"
+};
+
+NVN_BBox NVN_BBoxEmpty =
+{
+  { FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX },
+  { FLT_MIN, FLT_MIN, FLT_MIN, FLT_MIN }
+};
 
 
 /*****************************************************************************
@@ -25,7 +50,36 @@ extern "C" NVN_Err NVN_AddLayer(NVN_Model model, NVN_Layer layer)
   {
     Model* m = (Model*)model;
     Layer* l = (Layer*)layer;
-    m->TheLayer = l;
+    m->AddLayer(l);
+  }
+  else
+  {
+    retval = NVN_EINVARGS;
+  }
+
+  return retval;
+}
+
+extern "C" NVN_Err NVN_BBoxUnion(NVN_BBox b1, NVN_BBox b2, NVN_BBox* u)
+{
+  NVN_Err retval = NVN_NOERR;
+
+  if(u)
+  {
+
+    for(int i = 0; i < MAX_DIMS; i++)
+    {
+      if(b1.Min[i] < b1.Max[i] || b2.Min[i] < b2.Max[i])
+      {
+        u->Min[i] = MIN(b1.Min[i], b2.Min[i]);
+        u->Max[i] = MAX(b1.Max[i], b2.Max[i]);
+      }
+      else
+      {
+        u->Min[i] = FLT_MAX;
+        u->Max[i] = FLT_MIN;
+      }
+    }
   }
   else
   {
@@ -140,6 +194,22 @@ extern "C" NVN_Err NVN_DestroyWindow(NVN_Window window)
   return retval;
 }
 
+extern "C" NVN_Err NVN_ErrMsg(NVN_Err err, char msg[], size_t len)
+{
+  NVN_Err retval = NVN_NOERR;
+
+  if(err >= 0 && err < NVN_NUMERRS)
+  {
+    strncpy(msg, g_ErrMsg[err], len - 1);
+  }
+  else
+  {
+    retval = NVN_EINVARGS;
+  }
+
+  return retval;
+}
+
 extern "C" NVN_Err NVN_LoadDataGrid(NVN_DataGridDescriptor desc, NVN_DataGrid* grid)
 {
   NVN_Err retval = NVN_NOERR;
@@ -196,6 +266,25 @@ extern "C" NVN_Err NVN_ShowModel(NVN_Window window, NVN_Model model)
 /*****************************************************************************
  * Public predicate implementations
  *****************************************************************************/
+
+extern "C" int NVV_BBoxIntersectsP(NVN_BBox b1, NVN_BBox b2)
+{
+  int intersects = 0;
+
+  // First check to see that b1 and b2 both have extent in some dimension
+  for(int i = 0; i < MAX_DIMS && !intersects; i++)
+  {
+    intersects = b1.Min[i] < b1.Max[i] && b2.Min[i] < b2.Max[i];
+  }
+
+  // Check to see if they overlap in the dimensions they both occupy
+  for(int i = 0; i < MAX_DIMS && intersects; i++)
+  {
+    intersects = (!(b1.Min[i] > b2.Max[i] || b1.Max[i] < b2.Min[i]));
+  }
+
+  return intersects;
+}
 
 extern "C" int NVN_IsWindowActiveP(NVN_Window window)
 {

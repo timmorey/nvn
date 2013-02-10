@@ -52,25 +52,17 @@ Plot2DLayer::~Plot2DLayer()
 
 }
 
-float Plot2DLayer::GetWidth() const
+NVN_BBox Plot2DLayer::GetBounds() const
 {
-  if(_N > 0)
-    return VariantValueAsFloat(_MaxX) - VariantValueAsFloat(_MinX);
-  else
-    return 0.0f;
-}
+  NVN_BBox bounds = NVN_BBoxEmpty;
 
-float Plot2DLayer::GetHeight() const
-{
-  if(_N > 0)
-    return VariantValueAsFloat(_MaxY) - VariantValueAsFloat(_MinY);
-  else
-    return 0.0f;
-}
+  bounds.Min[XDIM] = VariantValueAsFloat(_MinX);
+  bounds.Min[YDIM] = VariantValueAsFloat(_MinY);
 
-float Plot2DLayer::GetDepth() const
-{
-  return 0.0f;
+  bounds.Max[XDIM] = VariantValueAsFloat(_MaxX);
+  bounds.Max[YDIM] = VariantValueAsFloat(_MaxY);
+
+  return bounds;
 }
 
 int Plot2DLayer::Render()

@@ -35,9 +35,9 @@ ShadedSurfaceLayer::ShadedSurfaceLayer(DataGrid* grid)
     MPI_Offset pos[MAX_DIMS];
     _MinVal = MaxVariant(MPITypeToVariantType(_DataGrid->GetType()));
     _MaxVal = MinVariant(MPITypeToVariantType(_DataGrid->GetType()));
-    for(pos[0] = 0; pos[0] < this->GetWidth(); pos[0]++)
+    for(pos[XDIM] = 0; pos[XDIM] < _DataGrid->GetDimLen(XDIM); pos[XDIM]++)
     {
-      for(pos[1] = 0; pos[1] < this->GetHeight(); pos[1]++)
+      for(pos[YDIM] = 0; pos[YDIM] < _DataGrid->GetDimLen(YDIM); pos[YDIM]++)
       {
         if(_DataGrid->HasData(pos))
         {
@@ -62,36 +62,28 @@ ShadedSurfaceLayer::~ShadedSurfaceLayer()
   }
 }
 
-float ShadedSurfaceLayer::GetWidth() const
+NVN_BBox ShadedSurfaceLayer::GetBounds() const
 {
-  if(_DataGrid)
-    return (float)_DataGrid->GetDimLen(0);
-  else
-    return 0.0f;
-}
+  NVN_BBox bounds = NVN_BBoxEmpty;
 
-float ShadedSurfaceLayer::GetHeight() const
-{
-  if(_DataGrid)
-    return (float)_DataGrid->GetDimLen(1);
-  else
-    return 0.0f;
-}
+  bounds.Min[XDIM] = 0.0f;
+  bounds.Min[YDIM] = 0.0f;
+  bounds.Min[ZDIM] = VariantValueAsFloat(_MinVal) / 100.0f;
 
-float ShadedSurfaceLayer::GetDepth() const
-{
-  if(_DataGrid)
-    return VariantValueAsFloat(_MaxVal) - VariantValueAsFloat(_MinVal);
-  else
-    return 0.0f;
+  bounds.Max[XDIM] = (float)_DataGrid->GetDimLen(0);
+  bounds.Max[YDIM] = (float)_DataGrid->GetDimLen(1);
+  bounds.Max[ZDIM] = VariantValueAsFloat(_MaxVal) / 100.0f;
+
+  return bounds;
 }
 
 int ShadedSurfaceLayer::Render()
 {
   if(! _Compiled)
   {
-    int datawidth = this->GetWidth();
-    int dataheight = this->GetHeight();
+    NVN_BBox bounds = this->GetBounds();
+    int datawidth = bounds.Max[XDIM] - bounds.Min[XDIM];
+    int dataheight = bounds.Max[YDIM] - bounds.Min[YDIM];
     MPI_Offset nw[MAX_DIMS], ne[MAX_DIMS], se[MAX_DIMS], sw[MAX_DIMS];
     Variant value;
     int color;

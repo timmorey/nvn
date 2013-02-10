@@ -2,11 +2,14 @@
 	 gl-window.cpp - Created by Timothy Morey on 1/12/2013
  */
 
+
+#include "nvn.h"
+
 #include "communication-queue.h"
 #include "gl-window.hpp"
 #include "Layer.hpp"
-#include "model.hpp"
-#include "nvn.h"
+#include "Model.hpp"
+#include "ReferenceFrameLayer.hpp"
 
 #define MPICH_SKIP_MPICXX 1
 #include <mpi.h>
@@ -169,8 +172,12 @@ int GLWindow::ResetView()
 
   if(_Model)
   {
-    _CenterX = _Model->GetWidth() / 2.0f;
-    _CenterY = _Model->GetHeight() / 2.0f;
+    NVN_BBox bounds = _Model->GetBounds();
+    float width = bounds.Max[XDIM] - bounds.Min[XDIM];
+    float height = bounds.Max[YDIM] - bounds.Min[YDIM];
+
+    _CenterX =  width / 2.0f;
+    _CenterY = height / 2.0f;
     _ZoomLevel = 1.0f;
     _XRotation = 0.0f;
     _ZRotation = 0.0f;
@@ -186,13 +193,16 @@ float GLWindow::GetPixelsPerModelUnit() const
 
   if(_Model)
   {
+    NVN_BBox mbounds = _Model->GetBounds();
+    float mwidth = mbounds.Max[XDIM] - mbounds.Min[XDIM];
+    float mheight = mbounds.Max[YDIM] - mbounds.Min[YDIM];
     float viewAspect = (float)_Width / (float)_Height;
-    float dataAspect = (float)_Model->GetWidth() / (float)_Model->GetHeight();
+    float dataAspect = mwidth / mheight;
 
     if(viewAspect > dataAspect)
-      scale = (float)_Height / (_Model->GetHeight() / _ZoomLevel);
+      scale = (float)_Height / (mheight / _ZoomLevel);
     else
-      scale = (float)_Width / (_Model->GetWidth() / _ZoomLevel);
+      scale = (float)_Width / (mwidth / _ZoomLevel);
   }
 
   return scale;
@@ -550,23 +560,14 @@ int GLWindow::RenderModel()
   glRotatef(_ZRotation, 0.0f, 0.0f, 1.0f);
   glTranslatef(-_CenterX,-_CenterY, 0.0f);
 
-  if(_Model && _Model->TheLayer)
-    _Model->TheLayer->Render();
+  if(_Model)
+    _Model->Render();
 
-  glBegin(GL_LINES);
-  {
-    glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
-
-    glVertex3f(0.0f, 0.0f, 0.0f);
-    glVertex3f(100.0f, 0.0f, 0.0f);
-
-    glVertex3f(0.0f, 0.0f, 0.0f);
-    glVertex3f(0.0f, 100.0f, 0.0f);
-
-    glVertex3f(0.0f, 0.0f, 0.0f);
-    glVertex3f(0.0f, 0.0f, 100.0f);
-  }
-  glEnd();
+  ReferenceFrameLayer frame(_Model->GetNDims());
+  NVN_BBox bounds;
+  bounds = _Model->GetBounds();
+  frame.SetBounds(bounds);
+  frame.Render();
 
   glXSwapBuffers(_Display, _XWindow);
 
