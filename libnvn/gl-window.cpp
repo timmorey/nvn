@@ -321,7 +321,7 @@ int GLWindow::CreateWindow()
     XMapWindow(_Display, _XWindow);
     glClearColor(0.0, 0.0, 0.0, 1.0);
 
-    glShadeModel(GL_FLAT);
+    glShadeModel(GL_SMOOTH);
     glEnable(GL_DEPTH_TEST);
 
     glEnable(GL_LIGHTING);

@@ -68,11 +68,11 @@ NVN_BBox ShadedSurfaceLayer::GetBounds() const
 
   bounds.Min[XDIM] = 0.0f;
   bounds.Min[YDIM] = 0.0f;
-  bounds.Min[ZDIM] = VariantValueAsFloat(_MinVal) / 100.0f;
+  bounds.Min[ZDIM] = VariantValueAsFloat(_MinVal) / 500.0f;
 
   bounds.Max[XDIM] = (float)_DataGrid->GetDimLen(0);
   bounds.Max[YDIM] = (float)_DataGrid->GetDimLen(1);
-  bounds.Max[ZDIM] = VariantValueAsFloat(_MaxVal) / 100.0f;
+  bounds.Max[ZDIM] = VariantValueAsFloat(_MaxVal) / 500.0f;
 
   return bounds;
 }
@@ -85,6 +85,7 @@ int ShadedSurfaceLayer::Render()
     int datawidth = bounds.Max[XDIM] - bounds.Min[XDIM];
     int dataheight = bounds.Max[YDIM] - bounds.Min[YDIM];
     MPI_Offset nw[MAX_DIMS], ne[MAX_DIMS], se[MAX_DIMS], sw[MAX_DIMS];
+    MPI_Offset i[MAX_DIMS];
     Variant value;
     int color;
 
@@ -103,52 +104,11 @@ int ShadedSurfaceLayer::Render()
               sw[1]++, se[1]++, ne[1]++, nw[1]++)
           {        
             if(_DataGrid->HasData(ne) && 
-                _DataGrid->HasData(se) &&
-                _DataGrid->HasData(sw) &&
-                _DataGrid->HasData(nw))
+               _DataGrid->HasData(se) &&
+               _DataGrid->HasData(sw) &&
+               _DataGrid->HasData(nw))
             {
-              Variant vsw, vse, vne, vnw;
-
-              _DataGrid->GetElemAsVariant(sw, &vsw);
-              _DataGrid->GetElemAsVariant(se, &vse);
-              _DataGrid->GetElemAsVariant(ne, &vne);
-              _DataGrid->GetElemAsVariant(nw, &vnw);
-
-              if(fabs(VariantValueAsFloat(vsw) - VariantValueAsFloat(vne)) <
-                  fabs(VariantValueAsFloat(vnw) - VariantValueAsFloat(vse)))
-              {
-                this->DrawTriangle(sw, nw, ne);
-                this->DrawTriangle(ne, se, sw);
-              }
-              else
-              {
-                this->DrawTriangle(nw, ne, se);
-                this->DrawTriangle(se, sw, nw);
-              }
-            }
-            else if(_DataGrid->HasData(ne) && 
-                _DataGrid->HasData(se) &&
-                _DataGrid->HasData(sw))
-            {
-              this->DrawTriangle(sw, se, ne);
-            }
-            else if(_DataGrid->HasData(ne) && 
-                _DataGrid->HasData(se) &&
-                _DataGrid->HasData(nw))
-            {
-              this->DrawTriangle(se, ne, nw);
-            }
-            else if (_DataGrid->HasData(ne) && 
-                _DataGrid->HasData(sw) &&
-                _DataGrid->HasData(nw))
-            {
-              this->DrawTriangle(ne, nw, sw);
-            }
-            else if(_DataGrid->HasData(se) &&
-                _DataGrid->HasData(sw) &&
-                _DataGrid->HasData(nw))
-            {
-              this->DrawTriangle(se, sw, nw);
+              this->DrawQuad(nw, ne, se, sw);
             }
           }
         }
@@ -232,7 +192,54 @@ int ShadedSurfaceLayer::Render()
   // glEnd();
 }
 
-int ShadedSurfaceLayer::DrawTriangle(MPI_Offset pt1[], MPI_Offset pt2[], MPI_Offset pt3[]) const
+int ShadedSurfaceLayer::DrawQuad(const MPI_Offset pt1[], const MPI_Offset pt2[],
+                                 const MPI_Offset pt3[], const MPI_Offset pt4[]) const
+{
+  int retval = NVN_NOERR;
+  Variant v1, v2, v3, v4;
+  float x1, x2, x3, x4;
+  float y1, y2, y3, y4;
+  float z1, z2, z3, z4;
+  int c1, c2, c3, c4;
+
+  _DataGrid->GetElemAsVariant(pt1, &v1);
+  _DataGrid->GetElemAsVariant(pt2, &v2);
+  _DataGrid->GetElemAsVariant(pt3, &v3);
+  _DataGrid->GetElemAsVariant(pt4, &v4);
+
+  c1 = GetColor(_Ramp, v1, _MinVal, _MaxVal);
+  c2 = GetColor(_Ramp, v2, _MinVal, _MaxVal);
+  c3 = GetColor(_Ramp, v3, _MinVal, _MaxVal);
+  c4 = GetColor(_Ramp, v4, _MinVal, _MaxVal);
+
+  x1 = (float)pt1[0];  y1 = (float)pt1[1];  z1 = VariantValueAsFloat(v1) / 500.0f;
+  x2 = (float)pt2[0];  y2 = (float)pt2[1];  z2 = VariantValueAsFloat(v2) / 500.0f;
+  x3 = (float)pt3[0];  y3 = (float)pt3[1];  z3 = VariantValueAsFloat(v3) / 500.0f;
+  x4 = (float)pt4[0];  y4 = (float)pt4[1];  z4 = VariantValueAsFloat(v4) / 500.0f;
+
+  if(fabs(z1 - z3) < fabs(z2 - z4))
+  {
+    this->DrawTriangle(x1, y1, z1, c1,
+                       x2, y2, z2, c2,
+                       x3, y3, z3, c3);
+    this->DrawTriangle(x3, y3, z3, c3,
+                       x4, y4, z4, c4,
+                       x1, y1, z1, c1);
+  }
+  else
+  {
+    this->DrawTriangle(x2, y2, z2, c2,
+                       x3, y3, z3, c3,
+                       x4, y4, z4, c4);
+    this->DrawTriangle(x4, y4, z4, c4,
+                       x1, y1, z1, c1,
+                       x2, y2, z2, c2);
+  }
+
+  return retval;
+}
+
+int ShadedSurfaceLayer::DrawTriangle(const MPI_Offset pt1[], const MPI_Offset pt2[], const MPI_Offset pt3[]) const
 {
   int retval = NVN_NOERR;
   Variant v1, v2, v3;
@@ -251,9 +258,24 @@ int ShadedSurfaceLayer::DrawTriangle(MPI_Offset pt1[], MPI_Offset pt2[], MPI_Off
   c2 = GetColor(_Ramp, v2, _MinVal, _MaxVal);
   c3 = GetColor(_Ramp, v3, _MinVal, _MaxVal);
 
-  x1 = (float)pt1[0];  y1 = (float)pt1[1];  z1 = VariantValueAsFloat(v1) / 100.0f;
-  x2 = (float)pt2[0];  y2 = (float)pt2[1];  z2 = VariantValueAsFloat(v2) / 100.0f;
-  x3 = (float)pt3[0];  y3 = (float)pt3[1];  z3 = VariantValueAsFloat(v3) / 100.0f;
+  x1 = (float)pt1[0];  y1 = (float)pt1[1];  z1 = VariantValueAsFloat(v1) / 500.0f;
+  x2 = (float)pt2[0];  y2 = (float)pt2[1];  z2 = VariantValueAsFloat(v2) / 500.0f;
+  x3 = (float)pt3[0];  y3 = (float)pt3[1];  z3 = VariantValueAsFloat(v3) / 500.0f;
+
+  retval = this->DrawTriangle(x1, y1, z1, c1,
+                              x2, y2, z2, c2,
+                              x3, y3, z3, c3);
+
+  return retval;
+}
+
+int ShadedSurfaceLayer::DrawTriangle(float x1, float y1, float z1, int c1,
+                                     float x2, float y2, float z2, int c2,
+                                     float x3, float y3, float z3, int c3) const
+{
+  int retval = NVN_NOERR;
+  float ux, uy, uz;
+  float vx, vy, vz;
 
   ux = x2 - x1;  vx = x3 - x1;
   uy = y2 - y1;  vy = y3 - y1;

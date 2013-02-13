@@ -33,7 +33,13 @@ public:
   virtual int Render();
 
 protected:
-  int DrawTriangle(MPI_Offset pt1[], MPI_Offset pt2[], MPI_Offset pt3[]) const;
+  int DrawQuad(const MPI_Offset pt1[], const MPI_Offset pt2[],
+               const MPI_Offset pt3[], const MPI_Offset pt4[]) const;
+  int DrawTriangle(const MPI_Offset pt1[], const MPI_Offset pt2[],
+                   const MPI_Offset pt3[]) const;
+  int DrawTriangle(float x1, float y1, float z1, int c1,
+                   float x2, float y2, float z2, int c2,
+                   float x3, float y3, float z3, int c3) const;
 
 protected:
   DataGrid* _DataGrid;
