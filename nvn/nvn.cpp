@@ -48,6 +48,9 @@ int main(int argc, char* argv[])
   MPI_Comm_size(MPI_COMM_WORLD, &commsize);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
+  memset(filename, 0, 256);
+  memset(varname, 0, 16 * 256);
+
   for(i = 0; i < MAX_DIMS; i++)
   {
     slabstart[i] = 0;
