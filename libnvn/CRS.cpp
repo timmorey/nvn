@@ -19,6 +19,7 @@ CRS::CRS(int ndims, const char* dimname[])
   for(int i = 0; i < _NDims; i++)
   {
     strcpy(_DimName[i], dimname[i]);
+    strcpy(_DimUnits[i], "");
   }
 }
 

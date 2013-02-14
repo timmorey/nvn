@@ -17,7 +17,7 @@
 class GridCRS : public CRS
 {
 public:
-  GridCRS(int gridndims, const char* griddim[MAX_DIMS]);
+  GridCRS(int gridndims, const char* griddim[]);
   ~GridCRS();
 
 protected:

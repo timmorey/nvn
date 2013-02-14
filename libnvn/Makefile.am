@@ -9,17 +9,23 @@ lib_LTLIBRARIES = libnvn.la
 
 # Sources for libnvn
 libnvn_la_SOURCES = \
+  CartesianCRS.cpp \
 	color-ramp.c \
 	communication-queue.c \
+	CRS.cpp \
 	DataGrid.cpp \
 	gl-window.cpp \
+	GridCRS.cpp \
+	GridTransform.cpp \
 	Loader.cpp \
 	Model.cpp \
 	nvn.cpp \
 	Plot2DLayer.cpp \
 	ReferenceFrameLayer.cpp \
+	ScreenCRS.cpp \
 	ShadedSurfaceLayer.cpp \
-	variant.c
+	variant.c \
+	ViewTransform.cpp 
 
 # Linker options libnvn
 libnvn_la_LDFLAGS = -lpnetcdf -lGL -lGLU -lpthread -lX11 -lxml2

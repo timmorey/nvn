@@ -6,8 +6,9 @@
 #define __CARTESIAN_CRS_HPP__
 
 
-#include "CRS.hpp"
 #include "nvn.h"
+
+#include "CRS.hpp"
 
 
 class CartesianCRS : public CRS

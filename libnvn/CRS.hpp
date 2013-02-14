@@ -10,8 +10,8 @@
 
 
 /**
-  The CRS object provides an abstract base class for all
-  CRSs.
+  The CRS object provides an abstract base class for all coordinate reference
+  systems.
 */
 class CRS
 {

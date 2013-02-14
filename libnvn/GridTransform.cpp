@@ -6,6 +6,8 @@
 #include "GridTransform.hpp"
 #include "nvn.h"
 
+#include <math.h>
+
 
 GridTransform::GridTransform(CRS& basecrs, GridCRS& gridcrs)
   : _BaseCRS(basecrs),
