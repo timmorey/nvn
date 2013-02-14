@@ -5,6 +5,8 @@
 
 #include "nvn.h"
 
+#include "server.h"
+
 #include <getopt.h>
 #include <mpi.h>
 #include <pnetcdf.h>
@@ -28,6 +30,15 @@ int AutoNavigate(NVN_Window vis);
  */
 int ParseHyperslab(const char* str, MPI_Offset slab[]);
 
+int RCServerCallback(Server* server,
+                     const char* clientName,
+                     const char* recvBuf, int recvLen,
+                     char* replyBuf, int* replyLen);
+
+int StartRCServer(NVN_Window vis, Server** server);
+
+int StopRCServer(Server* server);
+
 
 int main(int argc, char* argv[])
 {
@@ -43,6 +54,8 @@ int main(int argc, char* argv[])
   int commsize, rank;
   int i;
   int autonavigate = 0;
+  int listenForRemote = 0;
+  Server* rcserver = 0;
 
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &commsize);
@@ -57,7 +70,7 @@ int main(int argc, char* argv[])
     slabcount[i] = -1;
   }
 
-  while((c = getopt(argc, argv, "ac:f:h:s:v:w:")) != -1)
+  while((c = getopt(argc, argv, "ac:f:h:rs:v:w:")) != -1)
   {
     switch(c)
     {
@@ -78,6 +91,10 @@ int main(int argc, char* argv[])
     case 'h':
       // Display window height
       height = atoi(optarg);
+      break;
+
+    case 'r':
+      listenForRemote = 1;
       break;
 
     case 's':
@@ -159,6 +176,9 @@ int main(int argc, char* argv[])
     nvnresult = NVN_CreateWindow("nvn", 100, 100, 640, 480, 0, &vis);
     nvnresult = NVN_ShowModel(vis, model);
 
+    if(listenForRemote)
+      StartRCServer(vis, &rcserver);
+
     if(autonavigate)
     {
       AutoNavigate(vis);
@@ -168,6 +188,9 @@ int main(int argc, char* argv[])
       while(NVN_IsWindowActiveP(vis))
         sleep(1);
     }
+
+    if(listenForRemote)
+      StopRCServer(rcserver);
   }
   else
   {
@@ -185,7 +208,7 @@ int AutoNavigate(NVN_Window vis)
   float zoomlevel;
   float xrot, zrot;
 
-  while(1)
+  while(NVN_IsWindowActiveP(vis))
   {
     NVN_GetViewParms(vis, &centerx, &centery, &zoomlevel, &xrot, &zrot);
 
@@ -214,6 +237,56 @@ int ParseHyperslab(const char* str, MPI_Offset slab[])
     if(str)
       str++;
   }
+
+  return retval;
+}
+
+NVN_Window g_rcvis;
+
+int RCServerCallback(Server* server,
+                     const char* clientName,
+                     const char* recvBuf, int recvLen,
+                     char* replyBuf, int* replyLen)
+{
+  int retval = NVN_NOERR;
+
+  if(g_rcvis)
+  {
+    float ax, ay, az;
+    float rx, ry, rz;
+
+    if(recvLen >= 6 * sizeof(float))
+    {
+      ax = ((const float*)recvBuf)[0];
+      ay = ((const float*)recvBuf)[1];
+      az = ((const float*)recvBuf)[2];
+      rx = ((const float*)recvBuf)[3];
+      ry = ((const float*)recvBuf)[4];
+      rz = ((const float*)recvBuf)[5];
+
+      printf("ax=%6.2f, ay=%6.2f, az=%6.2f, rx=%6.2f, ry=%6.2f, rz=%6.2f\n",
+             ax, ay, az, rx, ry, rz);
+    }
+  }
+
+  return retval;
+}
+
+int StartRCServer(NVN_Window vis, Server** server)
+{
+  int retval = NVN_NOERR;
+
+  g_rcvis = vis;
+  retval = StartAsyncServer(16661, RCServerCallback, ServerModeStream, server);
+
+  return retval;
+}
+
+int StopRCServer(Server* server)
+{
+  int retval = NVN_NOERR;
+
+  retval = StopServer(server);
 
   return retval;
 }

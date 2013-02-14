@@ -11,7 +11,7 @@ bin_PROGRAMS=nvn
 # '_SOURCES' for example.
 
 # Sources for the a.out 
-nvn_SOURCES= nvn.cpp
+nvn_SOURCES= nvn.cpp server.c socket-utils.c
 
 # Linker options for a.out
 nvn_LDFLAGS = -static $(top_srcdir)/libnvn/libnvn.la

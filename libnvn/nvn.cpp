@@ -28,7 +28,10 @@ const char* g_ErrMsg[NVN_NUMERRS] =
   "Invalid type",
   "Queue full",
   "Not unique",
-  "Unknown format"
+  "Unknown format",
+  "Failed to establish network connection",
+  "Failed to start thread",
+  "Socket communication error"
 };
 
 NVN_BBox NVN_BBoxEmpty =

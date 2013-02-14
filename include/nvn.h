@@ -54,8 +54,11 @@ extern "C"
 #define NVN_EQFULL         8
 #define NVN_ENOTUNIQUE     9
 #define NVN_EUNKFORMAT    10
+#define NVN_ECONNFAIL     11
+#define NVN_ETHREADFAIL   12
+#define NVN_ECOMMFAIL     13
 
-#define NVN_NUMERRS       11
+#define NVN_NUMERRS       14
 
 
 /*****************************************************************************
