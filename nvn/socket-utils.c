@@ -95,6 +95,7 @@ int ReceiveMsgSize(SOCKET socket, int* size)
       if(sizeof(int) == 4)
       {
         *size = *((int*)buf);
+        *size = ntohl(*size);
       }
       else
       {
@@ -123,7 +124,7 @@ int SendMsgSize(SOCKET socket, int size)
   {
     if(sizeof(int) == 4)
     {
-      ((int*)buf)[0] = size;
+      ((int*)buf)[0] = htonl(size);
     }
     else
     {

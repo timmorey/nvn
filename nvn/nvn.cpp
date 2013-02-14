@@ -250,25 +250,32 @@ int RCServerCallback(Server* server,
 {
   int retval = NVN_NOERR;
 
+  printf("Received message...\n");
+
   if(g_rcvis)
   {
     float ax, ay, az;
     float rx, ry, rz;
+    float centerx, centery;
+    float zoomlevel;
+    float xrot, zrot;
 
-    if(recvLen >= 6 * sizeof(float))
-    {
-      ax = ((const float*)recvBuf)[0];
-      ay = ((const float*)recvBuf)[1];
-      az = ((const float*)recvBuf)[2];
-      rx = ((const float*)recvBuf)[3];
-      ry = ((const float*)recvBuf)[4];
-      rz = ((const float*)recvBuf)[5];
+    sscanf(recvBuf, "%f,%f,%f,%f,%f,%f", &ax, &ay, &az, &rx, &ry, &rz);
 
-      printf("ax=%6.2f, ay=%6.2f, az=%6.2f, rx=%6.2f, ry=%6.2f, rz=%6.2f\n",
-             ax, ay, az, rx, ry, rz);
-    }
+    printf("ax=%6.2f, ay=%6.2f, az=%6.2f, rx=%6.2f, ry=%6.2f, rz=%6.2f\n",
+           ax, ay, az, rx, ry, rz);
+
+    NVN_GetViewParms(g_rcvis, &centerx, &centery, &zoomlevel, &xrot, &zrot);
+
+    centerx += ax * 10.0f;
+    centery += ay * 10.0f;
+    xrot += rx * 2.0f;
+    zrot += rz * 2.0f;
+
+    NVN_SetViewParms(g_rcvis, centerx, centery, zoomlevel, xrot, zrot);
   }
 
+  *replyLen = 0;
   return retval;
 }
 
@@ -277,7 +284,7 @@ int StartRCServer(NVN_Window vis, Server** server)
   int retval = NVN_NOERR;
 
   g_rcvis = vis;
-  retval = StartAsyncServer(16661, RCServerCallback, ServerModeStream, server);
+  retval = StartAsyncServer(16661, RCServerCallback, ServerModeChatty, server);
 
   return retval;
 }
