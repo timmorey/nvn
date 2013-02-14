@@ -14,6 +14,8 @@
 #include <unistd.h>
 
 
+int AutoNavigate(NVN_Window vis);
+
 /**
 	 Parses a string representation of a hyperslab, which is a comma-delimited
 	 sequence of integers.
@@ -40,6 +42,7 @@ int main(int argc, char* argv[])
   int pos = 0;
   int commsize, rank;
   int i;
+  int autonavigate = 0;
 
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &commsize);
@@ -51,10 +54,14 @@ int main(int argc, char* argv[])
     slabcount[i] = -1;
   }
 
-  while((c = getopt(argc, argv, "c:f:h:s:v:w:")) != -1)
+  while((c = getopt(argc, argv, "ac:f:h:s:v:w:")) != -1)
   {
     switch(c)
     {
+    case 'a':
+      autonavigate = 1;
+      break;
+
     case 'c':
       // Hyperslab count to define the data we're rendering
       ParseHyperslab(optarg, slabcount);
@@ -149,8 +156,15 @@ int main(int argc, char* argv[])
     nvnresult = NVN_CreateWindow("nvn", 100, 100, 640, 480, 0, &vis);
     nvnresult = NVN_ShowModel(vis, model);
 
-    while(NVN_IsWindowActiveP(vis))
-      sleep(1);
+    if(autonavigate)
+    {
+      AutoNavigate(vis);
+    }
+    else
+    {
+      while(NVN_IsWindowActiveP(vis))
+        sleep(1);
+    }
   }
   else
   {
@@ -161,7 +175,28 @@ int main(int argc, char* argv[])
   return 0;
 }
 
+int AutoNavigate(NVN_Window vis)
+{
+  int retval = NVN_NOERR;
+  float centerx, centery;
+  float zoomlevel;
+  float xrot, zrot;
 
+  while(1)
+  {
+    NVN_GetViewParms(vis, &centerx, &centery, &zoomlevel, &xrot, &zrot);
+
+    zoomlevel = 3.0f;
+    xrot = -70.0f;
+    zrot += 0.01f;
+
+    NVN_SetViewParms(vis, centerx, centery, zoomlevel, xrot, zrot);
+
+    usleep(10000);
+  }
+
+  return retval;
+}
 
 int ParseHyperslab(const char* str, MPI_Offset slab[])
 {

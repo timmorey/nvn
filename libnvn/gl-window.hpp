@@ -40,6 +40,12 @@ public:
   int GetHeight() const { return _Height; }
   int IsBorderless() const { return _Borderless; }
 
+public:
+  int GetViewParms(float* centerx, float* centery, float* zoomlevel,
+                   float* xrotation, float* zrotation) const;
+  int SetViewParms(float centerx, float centery, float zoomlevel,
+                   float xrotation, float zrotation);
+
 protected:
   int CreateWindow();
   int DestroyWindow();

@@ -224,6 +224,44 @@ int GLWindow::ShowModel(Model* model)
   return retval;
 }
 
+int GLWindow::GetViewParms(float* centerx, float* centery, float* zoomlevel,
+                           float* xrotation, float* zrotation) const
+{
+  int retval = NVN_NOERR;
+
+  if(centerx)
+    *centerx = _CenterX;
+
+  if(centery)
+    *centery = _CenterY;
+
+  if(zoomlevel)
+    *zoomlevel = _ZoomLevel;
+
+  if(xrotation)
+    *xrotation = _XRotation;
+
+  if(zrotation)
+    *zrotation = _ZRotation;
+
+  return retval;
+}
+
+int GLWindow::SetViewParms(float centerx, float centery, float zoomlevel,
+                           float xrotation, float zrotation)
+{
+  int retval = NVN_NOERR;
+
+  _CenterX = centerx;
+  _CenterY = centery;
+  _ZoomLevel = zoomlevel;
+  _XRotation = xrotation;
+  _ZRotation = zrotation;
+  this->AsyncRefresh();
+
+  return retval;
+}
+
 
 /******************************************************************************
  * Protected Members

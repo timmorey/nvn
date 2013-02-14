@@ -210,6 +210,24 @@ extern "C" NVN_Err NVN_ErrMsg(NVN_Err err, char msg[], size_t len)
   return retval;
 }
 
+extern "C" NVN_Err NVN_GetViewParms(NVN_Window window, float* centerx, float* centery,
+                                    float* zoomlevel, float* xrotation, float* zrotation)
+{
+  NVN_Err retval = NVN_NOERR;
+
+  if(window)
+  {
+    GLWindow* w = (GLWindow*)window;
+    retval = w->GetViewParms(centerx, centery, zoomlevel, xrotation, zrotation);
+  }
+  else
+  {
+    retval = NVN_EINVARGS;
+  }
+
+  return retval;
+}
+
 extern "C" NVN_Err NVN_LoadDataGrid(NVN_DataGridDescriptor desc, NVN_DataGrid* grid)
 {
   NVN_Err retval = NVN_NOERR;
@@ -235,6 +253,24 @@ extern "C" NVN_Err NVN_LoadDataGrid(NVN_DataGridDescriptor desc, NVN_DataGrid* g
     }
 
     *grid = (NVN_DataGrid)g;
+  }
+  else
+  {
+    retval = NVN_EINVARGS;
+  }
+
+  return retval;
+}
+
+extern "C" NVN_Err NVN_SetViewParms(NVN_Window window, float centerx, float centery,
+                                    float zoomlevel, float xrotation, float zrotation)
+{
+  NVN_Err retval = NVN_NOERR;
+
+  if(window)
+  {
+    GLWindow* w = (GLWindow*)window;
+    retval = w->SetViewParms(centerx, centery, zoomlevel, xrotation, zrotation);
   }
   else
   {
