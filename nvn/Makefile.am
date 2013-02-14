@@ -11,10 +11,10 @@ bin_PROGRAMS=nvn
 # '_SOURCES' for example.
 
 # Sources for the a.out 
-nvn_SOURCES= nvn.c
+nvn_SOURCES= nvn.cpp
 
 # Linker options for a.out
-nvn_LDFLAGS = $(top_srcdir)/libnvn/libnvn.la
+nvn_LDFLAGS = -static $(top_srcdir)/libnvn/libnvn.la
 
 # Compiler options for a.out
 nvn_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/libnvn
