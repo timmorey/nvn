@@ -8,6 +8,8 @@
 
 #include "nvn.h"
 
+#include "CartesianCRS.hpp"
+
 #include <list>
 
 
@@ -22,6 +24,7 @@ public:
 public:
   NVN_BBox GetBounds() const;
   int GetNDims() const;
+  const CartesianCRS& GetCRS() const { return _Crs; }
 
 public:
   int AddLayer(Layer* layer);
@@ -29,6 +32,7 @@ public:
 
 protected:
   std::list<Layer*> _Layers;
+  CartesianCRS _Crs;
 };
 
 #endif

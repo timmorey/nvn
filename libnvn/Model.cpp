@@ -5,6 +5,7 @@
 
 #include "nvn.h"
 
+#include "CartesianCRS.hpp"
 #include "Layer.hpp"
 #include "Model.hpp"
 
@@ -12,6 +13,7 @@
 
 
 Model::Model()
+  : _Crs(4)
 {
 
 }
@@ -53,7 +55,10 @@ int Model::AddLayer(Layer* layer)
   int retval = NVN_NOERR;
 
   if(layer)
+  {
     _Layers.push_back(layer);
+    _Crs.SetNDims(this->GetNDims());
+  }
 
   return retval;
 }

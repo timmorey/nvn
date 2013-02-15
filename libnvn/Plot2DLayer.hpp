@@ -11,6 +11,7 @@
 
 #include "variant.h"
 
+#include "CartesianCRS.hpp"
 #include "Layer.hpp"
 
 #define MPICH_SKIP_MPICXX 1
@@ -27,6 +28,8 @@ public:
 
 public:
   virtual NVN_BBox GetBounds() const;
+  virtual const CRS& GetCRS() const { return _Crs; }
+  virtual const CartesianCRS& GetCartesianCRS() const { return _Crs; }
 
 public:
   virtual int Render();
@@ -38,6 +41,7 @@ protected:
   VariantType _DataType;
   Variant _MinX, _MinY;
   Variant _MaxX, _MaxY;
+  CartesianCRS _Crs;
 };
 
 #endif

@@ -14,7 +14,21 @@ DataGrid::DataGrid(int ndims, const MPI_Offset dimlen[], MPI_Datatype type, void
 : _NDims(ndims),
   _Data(data),
   _Type(type),
-  _NodataValue(0)
+  _NodataValue(0),
+  _Crs(ndims)
+{
+  memcpy(_DimLen, dimlen, ndims * sizeof(MPI_Offset));
+  MPI_Type_size(_Type, &_TypeSize);
+  _VarType = MPITypeToVariantType(_Type);
+}
+
+DataGrid::DataGrid(int ndims, const char dimnames[][MAX_NAME],
+                   const MPI_Offset dimlen[], MPI_Datatype type, void* data)
+: _NDims(ndims),
+  _Data(data),
+  _Type(type),
+  _NodataValue(0),
+  _Crs(ndims, dimnames)
 {
   memcpy(_DimLen, dimlen, ndims * sizeof(MPI_Offset));
   MPI_Type_size(_Type, &_TypeSize);

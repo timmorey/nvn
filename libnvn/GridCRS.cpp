@@ -8,13 +8,22 @@
 #include <string.h>
 
 
-GridCRS::GridCRS(int ndims, const char* dimname[])
+GridCRS::GridCRS(int ndims)
+  : CRS(ndims)
+{
+
+}
+
+GridCRS::GridCRS(int ndims, const char dimname[][MAX_NAME])
   : CRS(ndims, dimname)
 {
-  for(int i = 0; i < _NDims; i++)
-  {
-    strcpy(_DimUnits[i], "");
-  }
+
+}
+
+GridCRS::GridCRS(const GridCRS& other)
+  : CRS(other)
+{
+
 }
 
 GridCRS::~GridCRS()

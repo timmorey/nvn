@@ -16,7 +16,8 @@
 
 ReferenceFrameLayer::ReferenceFrameLayer(int ndims)
   : _Bounds(NVN_BBoxEmpty),
-    _NDims(ndims)
+    _NDims(ndims),
+    _Crs(ndims)
 {
 }
 

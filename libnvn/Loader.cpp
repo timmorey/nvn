@@ -77,11 +77,13 @@ int DetermineFileFormat(const char* filename, FileFormat* format)
 #define READBUF_SIZE 4194304
 #define WIDTH 720
 #define HEIGHT 740
+
 int LoadCReSISASCIIGrid(const char* filename, DataGrid** grid)
 {
   int retval = NVN_NOERR;
   int ndims = 2;
   MPI_Offset dimlen[MAX_DIMS];
+  char dimnames[MAX_DIMS][MAX_NAME];
   char readbuf[READBUF_SIZE];
   float* buf = 0;
   int n;
@@ -96,7 +98,10 @@ int LoadCReSISASCIIGrid(const char* filename, DataGrid** grid)
   nodataValue.Type = VariantTypeFloat;
   nodataValue.Value.FloatVal = -9999.0f;
 
+  strcpy(dimnames[0], "y");
   dimlen[0] = HEIGHT;
+
+  strcpy(dimnames[1], "x");
   dimlen[1] = WIDTH;
 
   FILE* f = 0;
@@ -151,7 +156,7 @@ int LoadCReSISASCIIGrid(const char* filename, DataGrid** grid)
 
   if(NVN_NOERR == retval && grid)
   {
-    *grid = new DataGrid(ndims, dimlen, MPI_FLOAT, buf);
+    *grid = new DataGrid(ndims, dimnames, dimlen, MPI_FLOAT, buf);
     (*grid)->SetNodataValue(nodataValue);
   }
 
@@ -168,6 +173,7 @@ int LoadPNetCDFGrid(const char* filename, const char* varname,
   int ncid, varid;
   nc_type vartype;
   int ndims, dimid[NC_MAX_DIMS];
+  char dimname[MAX_DIMS][MAX_NAME];
   MPI_Offset varlen, dimlen[NC_MAX_DIMS];
   int gridndims;
   MPI_Offset griddimlen[NC_MAX_DIMS];
@@ -208,6 +214,7 @@ int LoadPNetCDFGrid(const char* filename, const char* varname,
     gridndims = 0;
     for(int i = 0; i < ndims; i++)
     {
+      ncmpi_inq_dimname(ncid, dimid[i], dimname[i]);
       ncmpi_inq_dimlen(ncid, dimid[i], &dimlen[i]);
       varlen *= dimlen[i];
       
@@ -243,7 +250,7 @@ int LoadPNetCDFGrid(const char* filename, const char* varname,
   }
 
   if(NVN_NOERR == retval && grid)
-    *grid = new DataGrid(gridndims, griddimlen, gridtype, buf);
+    *grid = new DataGrid(gridndims, dimname, griddimlen, gridtype, buf);
 
   return retval;
 }

@@ -12,6 +12,7 @@
 #include "color-ramp.h"
 #include "variant.h"
 
+#include "CartesianCRS.hpp"
 #include "Layer.hpp"
 
 
@@ -28,6 +29,7 @@ public:
 
 public:
   virtual NVN_BBox GetBounds() const;
+  virtual const CRS& GetCRS() const { return _Crs; }
 
 public:
   virtual int Render();
@@ -52,6 +54,7 @@ protected:
   unsigned int _TextureID;
   unsigned int _DisplayList;
   bool _Compiled;
+  CartesianCRS _Crs;
 };
 
 

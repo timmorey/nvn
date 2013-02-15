@@ -14,7 +14,10 @@
 class CartesianCRS : public CRS
 {
 public:
-  CartesianCRS(int ndims, const char* dimname[], const char* dimunits[]);
+  CartesianCRS();
+  CartesianCRS(int ndims);
+  CartesianCRS(int ndims, const char dimname[][MAX_NAME], const char dimunits[][MAX_NAME]);
+  CartesianCRS(const CartesianCRS& other);
   virtual ~CartesianCRS();
 
 };

@@ -17,15 +17,22 @@ class CRS
 {
 protected:
   CRS();
-  CRS(int ndims, const char* dimname[]);
-  CRS(int ndims, const char* dimname[], const char* dimunits[]);
+  CRS(int ndims);
+  CRS(int ndims, const char dimname[][MAX_NAME]);
+  CRS(int ndims, const char dimname[][MAX_NAME], const char dimunits[][MAX_NAME]);
+  CRS(const CRS& other);
   virtual ~CRS();
 
 public:
   int GetNDims() const { return _NDims; }
-  const char* GetDimName(int dim) const { return _DimName[dim]; }
-  const char* GetDimUnits(int dim) const { return _DimUnits[dim]; }
+  int GetDimName(int dim, char name[]) const;
+  int GetDimUnits(int dim, char units[]) const;
   int FindDim(const char* name) const;
+
+public:
+  int SetDimName(int dim, const char* name);
+  int SetDimUnits(int dim, const char* units);
+  int SetNDims(int ndims);
 
 protected:
   int _NDims;

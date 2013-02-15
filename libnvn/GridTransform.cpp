@@ -24,10 +24,12 @@ GridTransform::~GridTransform()
 int GridTransform::GridToModel(const int posin[], float posout[]) const
 {
   int retval = NVN_NOERR;
+  char dimname[MAX_NAME];
 
   for(int i = 0; i < _GridCRS.GetNDims(); i++)
   {
-    int basedim = _BaseCRS.FindDim(_GridCRS.GetDimName(i));
+    _GridCRS.GetDimName(i, dimname);
+    int basedim = _BaseCRS.FindDim(dimname);
     if(basedim >= 0)
       posout[basedim] = (float)posin[i];
   }
@@ -38,10 +40,12 @@ int GridTransform::GridToModel(const int posin[], float posout[]) const
 int GridTransform::ModelToGrid(const float posin[], float posout[]) const
 {
   int retval = NVN_NOERR;
+  char dimname[MAX_NAME];
 
   for(int i = 0; i < _BaseCRS.GetNDims(); i++)
   {
-    int griddim = _GridCRS.FindDim(_BaseCRS.GetDimName(i));
+    _BaseCRS.GetDimName(i, dimname);
+    int griddim = _GridCRS.FindDim(dimname);
     if(griddim >= 0)
       posout[griddim] = posin[i];
   }
@@ -52,10 +56,12 @@ int GridTransform::ModelToGrid(const float posin[], float posout[]) const
 int GridTransform::ModelToGrid(const float posin[], int posout[]) const
 {
   int retval = NVN_NOERR;
+  char dimname[MAX_NAME];
 
   for(int i = 0; i < _BaseCRS.GetNDims(); i++)
   {
-    int griddim = _GridCRS.FindDim(_BaseCRS.GetDimName(i));
+    _BaseCRS.GetDimName(i, dimname);
+    int griddim = _GridCRS.FindDim(dimname);
     if(griddim >= 0)
       posout[griddim] = roundf(posin[i]);
   }

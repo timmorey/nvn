@@ -9,6 +9,8 @@
 #include "nvn.h"
 #include "variant.h"
 
+#include "GridCRS.hpp"
+
 #define MPICH_SKIP_MPICXX 1
 #include <mpi.h>
 
@@ -17,9 +19,12 @@ class DataGrid
 {
 public:
   DataGrid(int ndims, const MPI_Offset dimlen[], MPI_Datatype type, void* data);
+  DataGrid(int ndims, const char dimnames[][MAX_NAME], const MPI_Offset dimlen[], MPI_Datatype type, void* data);
   ~DataGrid();
 
 public:
+  const GridCRS& GetCRS() const { return _Crs; }
+
   MPI_Offset GetDimLen(int dim) const 
   { return dim >= 0 && dim < _NDims ? _DimLen[dim] : -1; }
   
@@ -44,6 +49,7 @@ protected:
   int _TypeSize;
   void* _Data;
   Variant* _NodataValue;
+  GridCRS _Crs;
 };
 
 #endif

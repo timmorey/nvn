@@ -6,7 +6,6 @@
 #define __GRID_CRS_HPP__
 
 
-#include "CartesianCRS.hpp"
 #include "CRS.hpp"
 
 
@@ -17,7 +16,9 @@
 class GridCRS : public CRS
 {
 public:
-  GridCRS(int gridndims, const char* griddim[]);
+  GridCRS(int gridndims);
+  GridCRS(int gridndims, const char griddim[][MAX_NAME]);
+  GridCRS(const GridCRS& other);
   ~GridCRS();
 
 protected:

@@ -6,6 +6,11 @@
 #define __LAYER_HPP__
 
 
+#include "nvn.h"
+
+#include "CRS.hpp"
+
+
 class Layer
 {
 protected:
@@ -19,6 +24,7 @@ public:
 
 public:
   virtual NVN_BBox GetBounds() const = 0;
+  virtual const CRS& GetCRS() const = 0;
 
 };
 

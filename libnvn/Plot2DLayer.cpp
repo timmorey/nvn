@@ -8,6 +8,7 @@
 #include "nvn.h"
 #include "variant.h"
 
+#include "CartesianCRS.hpp"
 #include "DataGrid.hpp"
 #include "Plot2DLayer.hpp"
 
@@ -20,7 +21,8 @@ Plot2DLayer::Plot2DLayer(DataGrid* x, DataGrid* y)
   : _X(x),
     _Y(y),
     _N(0),
-    _DataType()
+    _DataType(),
+    _Crs(2)
 {
   if(_X && _Y)
   {
