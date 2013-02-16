@@ -51,6 +51,8 @@ int DetermineFileFormat(const char* filename, FileFormat* format)
               break;
             }
           }
+
+          ncmpi_close(ncid);
         }
         else
         {
@@ -160,6 +162,12 @@ int LoadCReSISASCIIGrid(const char* filename, DataGrid** grid)
     (*grid)->SetNodataValue(nodataValue);
   }
 
+  if(f)
+  {
+    fclose(f);
+    f = 0;
+  }
+
   return retval;
 }
 
@@ -170,7 +178,7 @@ int LoadPNetCDFGrid(const char* filename, const char* varname,
 {
   int retval = NVN_NOERR;
   int ncresult;
-  int ncid, varid;
+  int ncid = 0, varid = 0;
   nc_type vartype;
   int ndims, dimid[NC_MAX_DIMS];
   char dimname[MAX_DIMS][MAX_NAME];
@@ -251,6 +259,12 @@ int LoadPNetCDFGrid(const char* filename, const char* varname,
 
   if(NVN_NOERR == retval && grid)
     *grid = new DataGrid(gridndims, dimname, griddimlen, gridtype, buf);
+
+  if(ncid)
+  {
+    ncmpi_close(ncid);
+    ncid = 0;
+  }
 
   return retval;
 }

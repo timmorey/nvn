@@ -29,6 +29,12 @@ CartesianCRS::CartesianCRS(int ndims, const char dimname[][MAX_NAME], const char
 
 }
 
+CartesianCRS::CartesianCRS(const CartesianCRS& other)
+  : CRS(other)
+{
+
+}
+
 CartesianCRS::~CartesianCRS()
 {
 

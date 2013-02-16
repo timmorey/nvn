@@ -23,7 +23,6 @@ public:
 
 public:
   NVN_BBox GetBounds() const;
-  int GetNDims() const;
   const CartesianCRS& GetCRS() const { return _Crs; }
 
 public:

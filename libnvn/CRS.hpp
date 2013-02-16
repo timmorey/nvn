@@ -24,10 +24,11 @@ protected:
   virtual ~CRS();
 
 public:
+  int Equal(const CRS& other) const;
+  int FindDim(const char* name) const;
   int GetNDims() const { return _NDims; }
   int GetDimName(int dim, char name[]) const;
   int GetDimUnits(int dim, char units[]) const;
-  int FindDim(const char* name) const;
 
 public:
   int SetDimName(int dim, const char* name);

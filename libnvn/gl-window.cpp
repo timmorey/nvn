@@ -601,10 +601,7 @@ int GLWindow::RenderModel()
   if(_Model)
     _Model->Render();
 
-  ReferenceFrameLayer frame(_Model->GetNDims());
-  NVN_BBox bounds;
-  bounds = _Model->GetBounds();
-  frame.SetBounds(bounds);
+  ReferenceFrameLayer frame(_Model->GetCRS(), _Model->GetBounds());
   frame.Render();
 
   glXSwapBuffers(_Display, _XWindow);

@@ -36,28 +36,14 @@ NVN_BBox Model::GetBounds() const
   return bounds;
 }
 
-int Model::GetNDims() const
-{
-  int ndims = 0;
-
-  NVN_BBox bounds = this->GetBounds();
-  for(int i = 0; i < MAX_DIMS; i++)
-  {
-    if(bounds.Max[i] > bounds.Min[i])
-      ndims++;
-  }
-
-  return ndims;
-}
-
 int Model::AddLayer(Layer* layer)
 {
   int retval = NVN_NOERR;
 
   if(layer)
   {
+    layer->SetModelCRS(_Crs);
     _Layers.push_back(layer);
-    _Crs.SetNDims(this->GetNDims());
   }
 
   return retval;

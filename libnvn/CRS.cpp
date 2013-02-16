@@ -78,6 +78,23 @@ CRS::~CRS()
 
 }
 
+int CRS::Equal(const CRS& other) const
+{
+  int equal = 1;
+
+if(_NDims != other._NDims)
+  equal = 0;
+
+for(int i = 0; equal && i < _NDims; i++)
+{
+  if(0 != strcmp(_DimName[i], other._DimName[i]) ||
+     0 != strcmp(_DimUnits[i], other._DimUnits[i]))
+    equal = 0;
+}
+
+  return equal;
+}
+
 int CRS::GetDimName(int dim, char name[]) const
 {
   int retval = NVN_NOERR;

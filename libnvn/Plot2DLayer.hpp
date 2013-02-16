@@ -28,11 +28,11 @@ public:
 
 public:
   virtual NVN_BBox GetBounds() const;
-  virtual const CRS& GetCRS() const { return _Crs; }
-  virtual const CartesianCRS& GetCartesianCRS() const { return _Crs; }
+  virtual const CRS& GetDataCRS() const { return _DataCrs; }
 
 public:
   virtual int Render();
+  virtual int SetModelCRS(const CartesianCRS& crs);
 
 protected:
   DataGrid* _X;
@@ -41,7 +41,7 @@ protected:
   VariantType _DataType;
   Variant _MinX, _MinY;
   Variant _MaxX, _MaxY;
-  CartesianCRS _Crs;
+  CartesianCRS _DataCrs;
 };
 
 #endif

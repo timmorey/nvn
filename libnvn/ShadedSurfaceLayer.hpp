@@ -29,10 +29,11 @@ public:
 
 public:
   virtual NVN_BBox GetBounds() const;
-  virtual const CRS& GetCRS() const { return _Crs; }
+  virtual const CRS& GetDataCRS() const { return _DataCrs; }
 
 public:
   virtual int Render();
+  virtual int SetModelCRS(const CartesianCRS& crs);
 
 protected:
   int DrawQuad(const MPI_Offset pt1[], const MPI_Offset pt2[],
@@ -54,7 +55,7 @@ protected:
   unsigned int _TextureID;
   unsigned int _DisplayList;
   bool _Compiled;
-  CartesianCRS _Crs;
+  CartesianCRS _DataCrs;
 };
 
 

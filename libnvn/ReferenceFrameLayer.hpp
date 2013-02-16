@@ -18,21 +18,20 @@
 class ReferenceFrameLayer : public Layer
 {
 public:
-  ReferenceFrameLayer(int dims);
+  ReferenceFrameLayer(const CartesianCRS& crs, NVN_BBox bounds);
   virtual ~ReferenceFrameLayer();
 
 public:
   virtual NVN_BBox GetBounds() const { return _Bounds; }
-  virtual const CRS& GetCRS() const { return _Crs; }
+  virtual const CRS& GetDataCRS() const { return _ModelCrs; }
 
 public:
   virtual int Render();
   int SetBounds(NVN_BBox bounds);
+  int SetModelCRS(const CartesianCRS& crs);
 
 protected:
   NVN_BBox _Bounds;
-  int _NDims;
-  CartesianCRS _Crs;
 };
 
 

@@ -26,7 +26,7 @@ ShadedSurfaceLayer::ShadedSurfaceLayer(DataGrid* grid)
   _TexWidth(0),
   _TexHeight(0),
   _TextureID(-1),
-  _DisplayList(-1),
+  _DisplayList(0),
   _Compiled(false)
 {
   if(_DataGrid)
@@ -81,6 +81,12 @@ int ShadedSurfaceLayer::Render()
 {
   if(! _Compiled)
   {
+    if(_DisplayList)
+    {
+      glDeleteLists(_DisplayList, 1);
+      _DisplayList = 0;
+    }
+
     NVN_BBox bounds = this->GetBounds();
     int datawidth = bounds.Max[XDIM] - bounds.Min[XDIM];
     int dataheight = bounds.Max[YDIM] - bounds.Min[YDIM];
@@ -190,6 +196,14 @@ int ShadedSurfaceLayer::Render()
   //   glVertex3f(0.0f, (float)dataheight, 0.0f);
   // }
   // glEnd();
+}
+
+int ShadedSurfaceLayer::SetModelCRS(const CartesianCRS& crs)
+{
+  int retval = NVN_NOERR;
+  _ModelCrs = crs;
+  _Compiled = false;
+  return retval;
 }
 
 int ShadedSurfaceLayer::DrawQuad(const MPI_Offset pt1[], const MPI_Offset pt2[],
