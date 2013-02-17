@@ -9,7 +9,7 @@
 #include <math.h>
 
 
-GridTransform::GridTransform(CRS& basecrs, GridCRS& gridcrs)
+GridTransform::GridTransform(const CRS& basecrs, const GridCRS& gridcrs)
   : _BaseCRS(basecrs),
     _GridCRS(gridcrs)
 {
@@ -21,7 +21,7 @@ GridTransform::~GridTransform()
 
 }
 
-int GridTransform::GridToModel(const int posin[], float posout[]) const
+int GridTransform::GridToModel(const MPI_Offset posin[], float posout[]) const
 {
   int retval = NVN_NOERR;
   char dimname[MAX_NAME];
@@ -53,7 +53,7 @@ int GridTransform::ModelToGrid(const float posin[], float posout[]) const
   return retval;
 }
 
-int GridTransform::ModelToGrid(const float posin[], int posout[]) const
+int GridTransform::ModelToGrid(const float posin[], MPI_Offset posout[]) const
 {
   int retval = NVN_NOERR;
   char dimname[MAX_NAME];

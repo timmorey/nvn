@@ -726,10 +726,10 @@ int GLWindow::RunMessageLoop()
       }
 
       if(_Window->_CenterX != prevCX ||
-          _Window->_CenterY != prevCY ||
-          _Window->_ZoomLevel != prevZoom ||
-          _Window->_XRotation != prevRX ||
-          _Window->_ZRotation != prevRZ)
+         _Window->_CenterY != prevCY ||
+         _Window->_ZoomLevel != prevZoom ||
+         _Window->_XRotation != prevRX ||
+         _Window->_ZRotation != prevRZ)
       {
         userModified = true;
       }

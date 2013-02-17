@@ -185,6 +185,7 @@ int LoadPNetCDFGrid(const char* filename, const char* varname,
   MPI_Offset varlen, dimlen[NC_MAX_DIMS];
   int gridndims;
   MPI_Offset griddimlen[NC_MAX_DIMS];
+  char griddimname[MAX_DIMS][MAX_NAME];
   MPI_Datatype gridtype;
   int typesize;
   void* buf = 0;
@@ -224,20 +225,17 @@ int LoadPNetCDFGrid(const char* filename, const char* varname,
     {
       ncmpi_inq_dimname(ncid, dimid[i], dimname[i]);
       ncmpi_inq_dimlen(ncid, dimid[i], &dimlen[i]);
-      varlen *= dimlen[i];
       
       if(count[i] == -1)
         count[i] = dimlen[i] - start[i];
       
       if(count[i] > 1)
-        griddimlen[gridndims++] = dimlen[i];
-    }
-
-    if(gridndims != 2)
-    {
-      fprintf(stderr, "Only two-dimensional data is supported, but the hyperslab "
-              "defines a %d-dimensional space.\n", ndims);
-      retval = NVN_ERROR;
+      {
+        varlen *= dimlen[i];
+        griddimlen[gridndims] = dimlen[i];
+        strcpy(griddimname[gridndims], dimname[i]);
+        gridndims ++;
+      }
     }
   }
 
@@ -258,7 +256,7 @@ int LoadPNetCDFGrid(const char* filename, const char* varname,
   }
 
   if(NVN_NOERR == retval && grid)
-    *grid = new DataGrid(gridndims, dimname, griddimlen, gridtype, buf);
+    *grid = new DataGrid(gridndims, griddimname, griddimlen, gridtype, buf);
 
   if(ncid)
   {

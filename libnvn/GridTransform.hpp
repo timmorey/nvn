@@ -13,17 +13,17 @@
 class GridTransform
 {
 public:
-  GridTransform(CRS& basecrs, GridCRS& gridcrs);
+  GridTransform(const CRS& basecrs, const GridCRS& gridcrs);
   ~GridTransform();
 
 public:
-  int GridToModel(const int posin[], float posout[]) const;
+  int GridToModel(const MPI_Offset posin[], float posout[]) const;
   int ModelToGrid(const float posin[], float posout[]) const;
-  int ModelToGrid(const float posin[], int posout[]) const;
+  int ModelToGrid(const float posin[], MPI_Offset posout[]) const;
 
 protected:
-  CRS& _BaseCRS;
-  GridCRS& _GridCRS;
+  const CRS& _BaseCRS;
+  const GridCRS& _GridCRS;
 };
 
 #endif

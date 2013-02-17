@@ -13,6 +13,7 @@
 #include "variant.h"
 
 #include "CartesianCRS.hpp"
+#include "GridTransform.hpp"
 #include "Layer.hpp"
 
 
@@ -29,7 +30,7 @@ public:
 
 public:
   virtual NVN_BBox GetBounds() const;
-  virtual const CRS& GetDataCRS() const { return _DataCrs; }
+  virtual const CRS& GetDataCRS() const;
 
 public:
   virtual int Render();
@@ -37,7 +38,8 @@ public:
 
 protected:
   int DrawQuad(const MPI_Offset pt1[], const MPI_Offset pt2[],
-               const MPI_Offset pt3[], const MPI_Offset pt4[]) const;
+               const MPI_Offset pt3[], const MPI_Offset pt4[],
+               const GridTransform& transform) const;
   int DrawTriangle(const MPI_Offset pt1[], const MPI_Offset pt2[],
                    const MPI_Offset pt3[]) const;
   int DrawTriangle(float x1, float y1, float z1, int c1,
@@ -55,7 +57,6 @@ protected:
   unsigned int _TextureID;
   unsigned int _DisplayList;
   bool _Compiled;
-  CartesianCRS _DataCrs;
 };
 
 
