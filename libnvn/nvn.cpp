@@ -128,14 +128,14 @@ extern "C" NVN_Err NVN_CreateModel(NVN_Model* model)
   return retval;
 }
 
-extern "C" NVN_Err NVN_CreatePlot2DLayer(NVN_DataGrid x, NVN_DataGrid y,
+extern "C" NVN_Err NVN_CreatePlot2DLayer(NVN_DataGrid x, NVN_DataGrid y, int color,
                                          NVN_Layer* layer)
 {
   NVN_Err retval = NVN_NOERR;
 
   if(layer)
   {
-    *layer = (NVN_Layer)new Plot2DLayer((DataGrid*)x, (DataGrid*)y);
+    *layer = (NVN_Layer)new Plot2DLayer((DataGrid*)x, (DataGrid*)y, color);
   }
   else
   {

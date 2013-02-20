@@ -6,6 +6,8 @@
  */
 
 #include "nvn.h"
+
+#include "color-ramp.h"
 #include "variant.h"
 
 #include "CartesianCRS.hpp"
@@ -18,9 +20,10 @@
 #include <string.h>
 
 
-Plot2DLayer::Plot2DLayer(DataGrid* x, DataGrid* y)
+Plot2DLayer::Plot2DLayer(DataGrid* x, DataGrid* y, int color)
   : _X(x),
     _Y(y),
+    _Color(color),
     _N(0),
     _DataType(),
     _DataCrs(2)
@@ -78,7 +81,7 @@ int Plot2DLayer::Render()
   MPI_Offset i[MAX_DIMS];
   Variant x, y;
 
-  glLineWidth(10.0f);
+  glLineWidth(5.0f);
   glBegin(GL_LINE_STRIP);
   {
     for(i[0] = 0; i[0] < _N; i[0]++)
@@ -86,7 +89,7 @@ int Plot2DLayer::Render()
       _X->GetElemAsVariant(i, &x);
       _Y->GetElemAsVariant(i, &y);
 
-      glColor4f(0.0f, 0.0f, 1.0f, 1.0f);
+      glColor4ub(GetA(_Color), GetB(_Color), GetG(_Color), GetR(_Color));
       glVertex3f(VariantValueAsFloat(x), VariantValueAsFloat(y), 0.0f);
     }
   }
