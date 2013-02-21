@@ -359,11 +359,6 @@ int GLWindow::CreateWindow()
     XMapWindow(_Display, _XWindow);
     glClearColor(0.0, 0.0, 0.0, 1.0);
 
-    glShadeModel(GL_SMOOTH);
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_COLOR_MATERIAL);
-    glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
-
     _Window = this;
   }
 
@@ -587,6 +582,9 @@ int GLWindow::RenderModel()
     float ambcolor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
     glEnable(GL_LIGHTING);
     glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambcolor);
+
+    glEnable(GL_COLOR_MATERIAL);
+    glColorMaterial(GL_FRONT, GL_AMBIENT);
   }
   else
   {
@@ -602,6 +600,11 @@ int GLWindow::RenderModel()
     glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambcolor);
     glLightfv(GL_LIGHT0, GL_DIFFUSE, diffcolor);
     glLightfv(GL_LIGHT0, GL_POSITION, lightpos);
+
+    glShadeModel(GL_SMOOTH);
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_COLOR_MATERIAL);
+    glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
   }
 
   glTranslatef(_CenterX, _CenterY, 0.0f);
