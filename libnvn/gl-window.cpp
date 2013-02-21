@@ -176,9 +176,9 @@ int GLWindow::ResetView()
     float width = bounds.Max[XDIM] - bounds.Min[XDIM];
     float height = bounds.Max[YDIM] - bounds.Min[YDIM];
 
-    _CenterX =  width / 2.0f;
-    _CenterY = height / 2.0f;
-    _ZoomLevel = 1.0f;
+    _CenterX = bounds.Min[XDIM] + width / 2.0f;
+    _CenterY = bounds.Min[YDIM] + height / 2.0f;
+    _ZoomLevel = 0.98f;  // back off just a bit to make sure the edges are visible
     _XRotation = 0.0f;
     _ZRotation = 0.0f;
     this->AsyncRefresh();
