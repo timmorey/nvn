@@ -526,7 +526,13 @@ int HandleStreamClient(ServerEx* server, SOCKET acceptSocket,
   while(server && server->KeepServerAlive && keepConnectionAlive &&
         NVN_NOERR == ValidSocket(acceptSocket, &valid) && valid)
   {
-    if(NVN_NOERR != ReceiveMsgSize(acceptSocket, &msgSize))
+    result = ReceiveMsgSize(acceptSocket, &msgSize);
+    if(NVN_ECLIENTGONE == result)
+    {
+      printf("Client disconnected.\n");
+      keepConnectionAlive = 0;
+    }
+    else if(NVN_NOERR != result)
     {
       retval = NVN_ECOMMFAIL;
       fprintf(stderr, "Failed to receive message size\n");
@@ -543,18 +549,23 @@ int HandleStreamClient(ServerEx* server, SOCKET acceptSocket,
 
       received = 0;
       server->Base.ReceiveBuffer[msgSize] = 0;
-      while(retval == NVN_NOERR && received < msgSize)
+      while(keepConnectionAlive && retval == NVN_NOERR && received < msgSize)
       {
         result = recv(acceptSocket, 
                       server->Base.ReceiveBuffer + received, 
                       msgSize - received, 
                       0);
         
-        if(result <= 0)
+        if(result < 0)
         {
           PrintSocketError("recv failed");
           keepConnectionAlive = 0;
           retval = NVN_ECOMMFAIL;
+        }
+        else if(result == 0)
+        {
+          printf("Client disconnected.\n");
+          keepConnectionAlive = 0;
         }
         else
         {

@@ -31,7 +31,8 @@ const char* g_ErrMsg[NVN_NUMERRS] =
   "Unknown format",
   "Failed to establish network connection",
   "Failed to start thread",
-  "Socket communication error"
+  "Socket communication error",
+  "Client closed connection"
 };
 
 NVN_BBox NVN_BBoxEmpty =

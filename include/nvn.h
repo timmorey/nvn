@@ -57,8 +57,9 @@ extern "C"
 #define NVN_ECONNFAIL     11
 #define NVN_ETHREADFAIL   12
 #define NVN_ECOMMFAIL     13
+#define NVN_ECLIENTGONE   14
 
-#define NVN_NUMERRS       14
+#define NVN_NUMERRS       15
 
 
 /*****************************************************************************

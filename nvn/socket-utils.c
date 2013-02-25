@@ -78,10 +78,15 @@ int ReceiveMsgSize(SOCKET socket, int* size)
     while(received < 4)
     {
       result = recv(socket, buf + received, 4 - received, 0);
-      if(result <= 0)
+      if(result < 0)
       {
         PrintSocketError("recv failed");
         retval = NVN_ECOMMFAIL;
+        break;
+      }
+      else if(result == 0)
+      {
+        retval = NVN_ECLIENTGONE;
         break;
       }
       else

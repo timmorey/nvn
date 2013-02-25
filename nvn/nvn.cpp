@@ -275,7 +275,8 @@ int RCServerCallback(Server* server,
     NVN_SetViewParms(g_rcvis, centerx, centery, zoomlevel, xrot, zrot);
   }
 
-  *replyLen = 0;
+  if(replyLen) *replyLen = 0;
+
   return retval;
 }
 
@@ -284,7 +285,7 @@ int StartRCServer(NVN_Window vis, Server** server)
   int retval = NVN_NOERR;
 
   g_rcvis = vis;
-  retval = StartAsyncServer(16661, RCServerCallback, ServerModeChatty, server);
+  retval = StartAsyncServer(16661, RCServerCallback, ServerModeStream, server);
 
   return retval;
 }
