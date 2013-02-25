@@ -105,7 +105,7 @@ NVN_Err NVN_CreateDataGrid(int ndims,
 
 NVN_Err NVN_CreateModel(NVN_Model* model);
 
-NVN_Err NVN_Create2DPlotLayer(NVN_DataGrid x, NVN_DataGrid y,
+NVN_Err NVN_Create2DPlotLayer(NVN_DataGrid x, NVN_DataGrid y, int color,
                               NVN_Layer* layer);
 
 NVN_Err NVN_CreateShadedSurfaceLayer(NVN_DataGrid grid, NVN_Layer* layer);

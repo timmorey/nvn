@@ -176,9 +176,9 @@ int GLWindow::ResetView()
     float width = bounds.Max[XDIM] - bounds.Min[XDIM];
     float height = bounds.Max[YDIM] - bounds.Min[YDIM];
 
-    _CenterX =  width / 2.0f;
-    _CenterY = height / 2.0f;
-    _ZoomLevel = 1.0f;
+    _CenterX = bounds.Min[XDIM] + width / 2.0f;
+    _CenterY = bounds.Min[YDIM] + height / 2.0f;
+    _ZoomLevel = 0.98f;  // back off just a bit to make sure the edges are visible
     _XRotation = 0.0f;
     _ZRotation = 0.0f;
     this->AsyncRefresh();
@@ -358,20 +358,6 @@ int GLWindow::CreateWindow()
     glXMakeCurrent(_Display, _XWindow, _GLXContext);
     XMapWindow(_Display, _XWindow);
     glClearColor(0.0, 0.0, 0.0, 1.0);
-
-    glShadeModel(GL_SMOOTH);
-    glEnable(GL_DEPTH_TEST);
-
-    glEnable(GL_LIGHTING);
-    float ambcolor[] = { 0.5f, 0.5f, 0.5f, 1.0f };
-    glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambcolor);
-
-    glEnable(GL_LIGHT0);
-    float diffcolor[] = { 0.5f, 0.5f, 0.5f, 1.0f };
-    glLightfv(GL_LIGHT0, GL_DIFFUSE, diffcolor);
-
-    glEnable(GL_COLOR_MATERIAL);
-    glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
 
     _Window = this;
   }
@@ -590,8 +576,36 @@ int GLWindow::RenderModel()
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
 
-  float lightpos[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
-  glLightfv(GL_LIGHT0, GL_POSITION, lightpos);
+  if(_Model->GetNDims() <= 2)
+  {
+    // For models without depth, just do full ambient lighting
+    float ambcolor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    glEnable(GL_LIGHTING);
+    glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambcolor);
+
+    glEnable(GL_COLOR_MATERIAL);
+    glColorMaterial(GL_FRONT, GL_AMBIENT);
+  }
+  else
+  {
+    // If we've got depth, then do a combination of ambient and diffuse
+    // lighting to show off the depth.
+
+    float lightpos[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+    float diffcolor[] = { 0.5f, 0.5f, 0.5f, 1.0f };
+    float ambcolor[] = { 0.5f, 0.5f, 0.5f, 1.0f };
+
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+    glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambcolor);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, diffcolor);
+    glLightfv(GL_LIGHT0, GL_POSITION, lightpos);
+
+    glShadeModel(GL_SMOOTH);
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_COLOR_MATERIAL);
+    glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+  }
 
   glTranslatef(_CenterX, _CenterY, 0.0f);
   glRotatef(_XRotation, 1.0f, 0.0f, 0.0f);

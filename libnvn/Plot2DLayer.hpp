@@ -23,7 +23,7 @@ class DataGrid;
 class Plot2DLayer : public Layer
 {
 public:
-  Plot2DLayer(DataGrid* x, DataGrid* y);
+  Plot2DLayer(DataGrid* x, DataGrid* y, int color);
   virtual ~Plot2DLayer();
 
 public:
@@ -37,6 +37,7 @@ public:
 protected:
   DataGrid* _X;
   DataGrid* _Y;
+  int _Color;
   int _N;
   VariantType _DataType;
   Variant _MinX, _MinY;

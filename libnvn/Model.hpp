@@ -24,6 +24,7 @@ public:
 public:
   NVN_BBox GetBounds() const;
   const CartesianCRS& GetCRS() const { return _Crs; }
+  int GetNDims() const;
 
 public:
   int AddLayer(Layer* layer);

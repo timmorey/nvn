@@ -70,7 +70,6 @@ extern "C" NVN_Err NVN_BBoxUnion(NVN_BBox b1, NVN_BBox b2, NVN_BBox* u)
 
   if(u)
   {
-
     for(int i = 0; i < MAX_DIMS; i++)
     {
       if(b1.Min[i] < b1.Max[i] || b2.Min[i] < b2.Max[i])
@@ -129,14 +128,14 @@ extern "C" NVN_Err NVN_CreateModel(NVN_Model* model)
   return retval;
 }
 
-extern "C" NVN_Err NVN_CreatePlot2DLayer(NVN_DataGrid x, NVN_DataGrid y,
+extern "C" NVN_Err NVN_CreatePlot2DLayer(NVN_DataGrid x, NVN_DataGrid y, int color,
                                          NVN_Layer* layer)
 {
   NVN_Err retval = NVN_NOERR;
 
   if(layer)
   {
-    *layer = (NVN_Layer)new Plot2DLayer((DataGrid*)x, (DataGrid*)y);
+    *layer = (NVN_Layer)new Plot2DLayer((DataGrid*)x, (DataGrid*)y, color);
   }
   else
   {
