@@ -77,8 +77,6 @@ int DetermineFileFormat(const char* filename, FileFormat* format)
 }
 
 #define READBUF_SIZE 4194304
-#define WIDTH 720
-#define HEIGHT 740
 
 int LoadCReSISASCIIGrid(const char* filename, DataGrid** grid)
 {
@@ -89,22 +87,16 @@ int LoadCReSISASCIIGrid(const char* filename, DataGrid** grid)
   char readbuf[READBUF_SIZE];
   float* buf = 0;
   int n;
-  int line = 0;
   int x = 0;
   int y = 0;
   int readbufOffset = 0;
-  int headerlines = 6;
   int mark = 0;
   Variant nodataValue;
+  int width, height;
+  float xllcorner, yllcorner, cellsize;
 
   nodataValue.Type = VariantTypeFloat;
-  nodataValue.Value.FloatVal = -9999.0f;
-
-  strcpy(dimnames[0], "y");
-  dimlen[0] = HEIGHT;
-
-  strcpy(dimnames[1], "x");
-  dimlen[1] = WIDTH;
+  nodataValue.Value.FloatVal = -666.0f;
 
   FILE* f = 0;
   f = fopen(filename, "r");
@@ -114,7 +106,24 @@ int LoadCReSISASCIIGrid(const char* filename, DataGrid** grid)
     fprintf(stderr, "Unable to open file '%s'.\n", filename);
   }
 
-  buf = (float*)malloc(WIDTH * HEIGHT * sizeof(float));
+  // Read the header
+  if(NVN_NOERR == retval)
+  {
+    if(! feof(f)) fscanf(f, "ncols %d\n", &width);
+    if(! feof(f)) fscanf(f, "nrows %d\n", &height);
+    if(! feof(f)) fscanf(f, "xllcorner %f\n", &xllcorner);
+    if(! feof(f)) fscanf(f, "yllcorner %f\n", &yllcorner);
+    if(! feof(f)) fscanf(f, "cellsize %f\n", &cellsize);
+    if(! feof(f)) fscanf(f, "NODATA_value %f\n", &nodataValue.Value.FloatVal);
+  }
+
+  strcpy(dimnames[0], "y");
+  dimlen[0] = height;
+
+  strcpy(dimnames[1], "x");
+  dimlen[1] = width;
+
+  buf = (float*)malloc(width * height * sizeof(float));
 
   if(NVN_NOERR == retval)
   {
@@ -128,22 +137,15 @@ int LoadCReSISASCIIGrid(const char* filename, DataGrid** grid)
         switch(readbuf[i])
         {
         case '\n':
-          line ++;
           mark = i + 1;
-          if(line > headerlines)
-          {
-            x = 0;
-            y ++;
-          }
+          x = 0;
+          y ++;
           break;
 
         case ' ':
-          if(line >= headerlines)
-          {
-            buf[y * WIDTH + x] = atof(readbuf + mark);
-            mark = i + 1;
-            x ++;
-          }
+          buf[y * width + x] = atof(readbuf + mark);
+          mark = i + 1;
+          x ++;
           break;
         }
       }
