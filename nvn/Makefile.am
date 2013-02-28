@@ -18,3 +18,6 @@ nvn_LDFLAGS = -static $(top_srcdir)/libnvn/libnvn.la
 
 # Compiler options for a.out
 nvn_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/libnvn
+
+nvn_DEPENDENCIES = ../libnvn/.libs/libnvn.la
+
