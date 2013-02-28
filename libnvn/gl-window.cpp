@@ -591,7 +591,7 @@ int GLWindow::RenderModel()
     // If we've got depth, then do a combination of ambient and diffuse
     // lighting to show off the depth.
 
-    float lightpos[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+    float lightpos[] = { _CenterX, _CenterY, 10000.0f, 1.0f };
     float diffcolor[] = { 0.5f, 0.5f, 0.5f, 1.0f };
     float ambcolor[] = { 0.5f, 0.5f, 0.5f, 1.0f };
 

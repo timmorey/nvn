@@ -82,8 +82,8 @@ NVN_BBox ShadedSurfaceLayer::GetBounds() const
   transform.GridToModel(minpti, bounds.Min);
   transform.GridToModel(maxpti, bounds.Max);
 
-  bounds.Min[ZDIM] = VariantValueAsFloat(_MinVal) / 500.0f;
-  bounds.Max[ZDIM] = VariantValueAsFloat(_MaxVal) / 500.0f;
+  bounds.Min[ZDIM] = VariantValueAsFloat(_MinVal) / 100.0f;
+  bounds.Max[ZDIM] = VariantValueAsFloat(_MaxVal) / 100.0f;
 
   return bounds;
 }
@@ -245,16 +245,16 @@ int ShadedSurfaceLayer::DrawQuad(const MPI_Offset pt1[], const MPI_Offset pt2[],
   c4 = GetColor(_Ramp, v4, _MinVal, _MaxVal);
 
   transform.GridToModel(pt1, p1);
-  p1[ZDIM] = VariantValueAsFloat(v1) / 500.0f;
+  p1[ZDIM] = VariantValueAsFloat(v1) / 100.0f;
 
   transform.GridToModel(pt2, p2);
-  p2[ZDIM] = VariantValueAsFloat(v2) / 500.0f;
+  p2[ZDIM] = VariantValueAsFloat(v2) / 100.0f;
 
   transform.GridToModel(pt3, p3);
-  p3[ZDIM] = VariantValueAsFloat(v3) / 500.0f;
+  p3[ZDIM] = VariantValueAsFloat(v3) / 100.0f;
 
   transform.GridToModel(pt4, p4);
-  p4[ZDIM] = VariantValueAsFloat(v4) / 500.0f;
+  p4[ZDIM] = VariantValueAsFloat(v4) / 100.0f;
 
   if(fabs(p1[ZDIM] - p3[ZDIM]) < fabs(p2[ZDIM] - p4[ZDIM]))
   {
