@@ -6,7 +6,8 @@
 #include "nvn.h"
 
 #include "DataGrid.hpp"
-#include "gl-window.hpp"
+#include "GLWindow.hpp"
+#include "GLX.hpp"
 #include "Loader.hpp"
 #include "Model.hpp"
 #include "Plot2DLayer.hpp"
@@ -172,8 +173,9 @@ extern "C" NVN_Err NVN_CreateWindow(const char* title,
 
   if(window)
   {
-    *window = (NVN_Window)new GLWindow(title, x, y,
-        width, height, (bool)borderless);
+    GLWindow* w = 0;
+    retval = GLX::CreateWindow(title, x, y, width, height, (bool)borderless, &w);
+    *window = (NVN_Window)w;
   }
   else
   {
@@ -190,8 +192,7 @@ extern "C" NVN_Err NVN_DestroyWindow(NVN_Window window)
   if(window)
   {
     GLWindow* w = (GLWindow*)window;
-    w->CloseWindow();
-    delete w;
+    GLX::DestroyWindow(w);
   }
 
   return retval;
@@ -227,6 +228,15 @@ extern "C" NVN_Err NVN_GetViewParms(NVN_Window window, float* centerx, float* ce
   {
     retval = NVN_EINVARGS;
   }
+
+  return retval;
+}
+
+extern "C" NVN_Err NVN_Init()
+{
+  NVN_Err retval = NVN_NOERR;
+
+  retval = GLX::Init();
 
   return retval;
 }
@@ -301,6 +311,15 @@ extern "C" NVN_Err NVN_ShowModel(NVN_Window window, NVN_Model model)
   return retval;
 }
 
+extern "C" NVN_Err NVN_Shutdown()
+{
+  NVN_Err retval = NVN_NOERR;
+
+  retval = GLX::Shutdown();
+
+  return retval;
+}
+
 
 /*****************************************************************************
  * Public predicate implementations
@@ -332,7 +351,7 @@ extern "C" int NVN_IsWindowActiveP(NVN_Window window)
   if(window)
   {
     GLWindow* w = (GLWindow*)window;
-    active = w->IsActive();
+    active = GLX::IsActive(w);
   }
 
   return active;

@@ -61,6 +61,8 @@ int main(int argc, char* argv[])
   MPI_Comm_size(MPI_COMM_WORLD, &commsize);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
+  NVN_Init();
+
   memset(filename, 0, 256);
   memset(varname, 0, 16 * 256);
 
@@ -197,7 +199,9 @@ int main(int argc, char* argv[])
     fprintf(stderr, "Unable to load grid.\n");
   }
 
+  NVN_Shutdown();
   MPI_Finalize();
+
   return 0;
 }
 

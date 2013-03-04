@@ -1,19 +1,16 @@
-/**
-	 gl-window.hpp - Created by Timothy Morey on 1/12/2013
+/*
+ * GLWindow.hpp
+ *
+ *  Created on: Mar 4, 2013
+ *      Author: Timothy Morey
  */
 
-#ifndef __GL_WINDOW_HPP__
-#define __GL_WINDOW_HPP__
+#ifndef __GLWINDOW_HPP__
+#define __GLWINDOW_HPP__
 
 
-#include "communication-queue.h"
-
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/Xos.h>
-
-#include <GL/gl.h>
 #include <GL/glx.h>
+#include <X11/Xlib.h>
 
 
 class Model;
@@ -27,18 +24,19 @@ public:
 
 public:
   int AsyncRefresh();
-  int CloseWindow();
   int ResetView();
   int ShowModel(Model* model);
 
 public:
-  bool IsActive() const;
   float GetPixelsPerModelUnit() const;
   int GetX() const { return _X; }
   int GetY() const { return _Y; }
   int GetWidth() const { return _Width; }
   int GetHeight() const { return _Height; }
-  int IsBorderless() const { return _Borderless; }
+  Atom GetWMDeleteMessage() const { return _WMDeleteMessage; }
+  bool IsBorderless() const { return _Borderless; }
+  bool IsDirty() const { return _Dirty; }
+  bool Matches(Window xwin) const { return xwin == _XWindow; }
 
 public:
   int GetViewParms(float* centerx, float* centery, float* zoomlevel,
@@ -46,14 +44,12 @@ public:
   int SetViewParms(float centerx, float centery, float zoomlevel,
                    float xrotation, float zrotation);
 
-protected:
-  int CreateWindow();
-  int DestroyWindow();
+/**
+ * The following public methods must be called only from the UI thread.
+ */
+public:
   int GetMousePos(int* x, int* y) const;
   int GetMousePosInModel(float *x, float *y) const;
-  int RenderModel();
-
-protected:
   int HandleXButtonPress(XEvent event);
   int HandleXButtonRelease(XEvent event);
   int HandleXConfigureNotify(XEvent event);
@@ -61,6 +57,7 @@ protected:
   int HandleXKeyPress(XEvent event);
   int HandleXKeyRelease(XEvent event);
   int HandleXMotionNotify(XEvent event);
+  int RenderModel();
 
 protected:
   int _X, _Y, _Width, _Height;
@@ -83,20 +80,6 @@ protected:
   float _CtrlDownXRotation, _AltDownZRotation;
 
   bool _Dirty;
-
-protected:
-  static GLWindow* _Window;
-  static pthread_t _UIThread;
-  static bool _UIThreadActive;
-  static bool _KeepUIThreadActive;
-  static CommunicationQueue _UIQueue;
-  static Display* _Display;
-  static XVisualInfo* _VisualInfo;
-
-  static int InitUIThread();
-  static int RunMessageLoop();
-  static int ShutdownUIThread();
-  static void* UIThreadEntryPoint(void* arg);
 };
 
 #endif

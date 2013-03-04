@@ -123,12 +123,16 @@ NVN_Err NVN_ErrMsg(NVN_Err err, char msg[], size_t len);
 NVN_Err NVN_GetViewParms(NVN_Window window, float* centerx, float* centery,
                          float* zoomlevel, float* xrotation, float* zrotation);
 
+NVN_Err NVN_Init();
+
 NVN_Err NVN_LoadDataGrid(NVN_DataGridDescriptor desc, NVN_DataGrid* grid);
 
 NVN_Err NVN_SetViewParms(NVN_Window window, float centerx, float centery,
                          float zoomlevel, float xrotation, float zrotation);
 
 NVN_Err NVN_ShowModel(NVN_Window window, NVN_Model model);
+
+NVN_Err NVN_Shutdown();
 
 
 /*****************************************************************************

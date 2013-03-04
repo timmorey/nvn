@@ -14,7 +14,8 @@ libnvn_la_SOURCES = \
 	communication-queue.c \
 	CRS.cpp \
 	DataGrid.cpp \
-	gl-window.cpp \
+	GLWindow.cpp \
+	GLX.cpp \
 	GridCRS.cpp \
 	GridTransform.cpp \
 	Loader.cpp \
