@@ -192,6 +192,10 @@ int LoadPNetCDFGrid(const char* filename, const char* varname,
   int typesize;
   void* buf = 0;
 
+  nc_type nodataType;
+  Variant nodataValue;
+  bool hasNodataValue = false;
+
   if(NVN_NOERR == retval)
   {
     ncresult = ncmpi_open(MPI_COMM_WORLD, filename, 
@@ -239,6 +243,27 @@ int LoadPNetCDFGrid(const char* filename, const char* varname,
         gridndims ++;
       }
     }
+
+    ncresult = ncmpi_inq_atttype(ncid, varid, "_FillValue", &nodataType);
+    if(NC_NOERR == ncresult)
+    {
+      if(nodataType == NC_FLOAT)
+      {
+        hasNodataValue = true;
+        nodataValue.Type = VariantTypeFloat;
+        ncmpi_get_att_float(ncid, varid, "_FillValue", &nodataValue.Value.FloatVal);
+      }
+      else if(nodataType == NC_DOUBLE)
+      {
+        hasNodataValue = true;
+        nodataValue.Type = VariantTypeDouble;
+        ncmpi_get_att_double(ncid, varid, "_FillValue", &nodataValue.Value.DoubleVal);
+      }
+      else
+      {
+        fprintf(stderr, "Unsupported NoData type: %d.\n", nodataType);
+      }
+    }
   }
 
   if(NVN_NOERR == retval)
@@ -258,7 +283,11 @@ int LoadPNetCDFGrid(const char* filename, const char* varname,
   }
 
   if(NVN_NOERR == retval && grid)
+  {
     *grid = new DataGrid(gridndims, griddimname, griddimlen, gridtype, buf);
+    if(hasNodataValue)
+      (*grid)->SetNodataValue(nodataValue);
+  }
 
   if(ncid)
   {
