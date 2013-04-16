@@ -78,6 +78,7 @@ typedef struct
   char Varname[MAX_NAME];
   MPI_Offset Start[MAX_DIMS];
   MPI_Offset Count[MAX_DIMS];
+  MPI_Offset Stride[MAX_DIMS];
 } NVN_DataGridDescriptor;
 
 typedef struct

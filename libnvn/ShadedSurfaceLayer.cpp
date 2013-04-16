@@ -76,8 +76,8 @@ NVN_BBox ShadedSurfaceLayer::GetBounds() const
   minpti[XDIM] = 0;
   minpti[YDIM] = 0;
 
-  maxpti[XDIM] = _DataGrid->GetDimLen(0);
-  maxpti[YDIM] = _DataGrid->GetDimLen(1);
+  maxpti[XDIM] = _DataGrid->GetDimLen(0) - 1;
+  maxpti[YDIM] = _DataGrid->GetDimLen(1) - 1;
 
   transform.GridToModel(minpti, bounds.Min);
   transform.GridToModel(maxpti, bounds.Max);

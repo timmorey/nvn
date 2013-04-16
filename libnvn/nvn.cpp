@@ -255,7 +255,7 @@ extern "C" NVN_Err NVN_LoadDataGrid(NVN_DataGridDescriptor desc, NVN_DataGrid* g
     case FileFormatCDF1:
     case FileFormatCDF2:
     case FileFormatCDF5:
-      LoadPNetCDFGrid(desc.Filename, desc.Varname, desc.Start, desc.Count, &g);
+      LoadPNetCDFGrid(desc.Filename, desc.Varname, desc.Start, desc.Count, desc.Stride, &g);
       break;
     case FileFormatCReSISGrid:
       LoadCReSISASCIIGrid(desc.Filename, &g);

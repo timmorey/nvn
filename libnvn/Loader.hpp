@@ -23,7 +23,7 @@ int DetermineFileFormat(const char* filename, FileFormat* format);
 int LoadCReSISASCIIGrid(const char* filename, DataGrid** grid);
 
 int LoadPNetCDFGrid(const char* filename, const char* varname, 
-                    MPI_Offset start[], MPI_Offset count[],
+                    MPI_Offset start[], MPI_Offset count[], MPI_Offset stride[],
                     DataGrid** grid);
 
 #endif

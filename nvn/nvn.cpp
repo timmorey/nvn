@@ -48,7 +48,7 @@ int main(int argc, char* argv[])
   char filename[256], varname[16][256];
   int nvars;
   int quit = 0;
-  MPI_Offset slabstart[MAX_DIMS], slabcount[MAX_DIMS];
+  MPI_Offset slabstart[MAX_DIMS], slabcount[MAX_DIMS], slabstride[MAX_DIMS];
   const char* str, *str2;
   int pos = 0;
   int commsize, rank;
@@ -70,9 +70,10 @@ int main(int argc, char* argv[])
   {
     slabstart[i] = 0;
     slabcount[i] = -1;
+    slabstride[i] = 1;
   }
 
-  while((c = getopt(argc, argv, "ac:f:h:rs:v:w:")) != -1)
+  while((c = getopt(argc, argv, "ac:f:h:rs:t:v:w:")) != -1)
   {
     switch(c)
     {
@@ -102,6 +103,11 @@ int main(int argc, char* argv[])
     case 's':
       // Hyperslab start to define the data we're rendering
       ParseHyperslab(optarg, slabstart);
+      break;
+
+    case 't':
+      // Hyperslab stride to define the data we're rendering
+      ParseHyperslab(optarg, slabstride);
       break;
 
     case 'v':
@@ -167,6 +173,7 @@ int main(int argc, char* argv[])
   strcpy(desc.Varname, varname[rank]);
   memcpy(desc.Start, slabstart, MAX_DIMS * sizeof(MPI_Offset));
   memcpy(desc.Count, slabcount, MAX_DIMS * sizeof(MPI_Offset));
+  memcpy(desc.Stride, slabstride, MAX_DIMS * sizeof(MPI_Offset));
 
   nvnresult = NVN_LoadDataGrid(desc, &grid);
 

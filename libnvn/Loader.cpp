@@ -175,7 +175,7 @@ int LoadCReSISASCIIGrid(const char* filename, DataGrid** grid)
 
 
 int LoadPNetCDFGrid(const char* filename, const char* varname, 
-                    MPI_Offset start[], MPI_Offset count[],
+                    MPI_Offset start[], MPI_Offset count[], MPI_Offset stride[],
                     DataGrid** grid)
 {
   int retval = NVN_NOERR;
@@ -232,13 +232,17 @@ int LoadPNetCDFGrid(const char* filename, const char* varname,
       ncmpi_inq_dimname(ncid, dimid[i], dimname[i]);
       ncmpi_inq_dimlen(ncid, dimid[i], &dimlen[i]);
       
-      if(count[i] == -1)
-        count[i] = dimlen[i] - start[i];
+      if(count[i] < 1 ||
+         count[i] * stride[i] > dimlen[i] - start[i])
+      {
+        count[i] = (dimlen[i] - start[i]) / stride[i];
+        if((dimlen[i] - start[i]) % stride[i] > 0) count[i]++;
+      }
       
       if(count[i] > 1)
       {
-        varlen *= dimlen[i];
-        griddimlen[gridndims] = dimlen[i];
+        varlen *= count[i];
+        griddimlen[gridndims] = count[i];
         strcpy(griddimname[gridndims], dimname[i]);
         gridndims ++;
       }
@@ -272,7 +276,7 @@ int LoadPNetCDFGrid(const char* filename, const char* varname,
     MPI_Type_size(gridtype, &typesize);
     buf = malloc(varlen * typesize);
     
-    ncresult = ncmpi_get_vara_all(ncid, varid, start, count, 
+    ncresult = ncmpi_get_vars_all(ncid, varid, start, count, stride,
                                   buf, varlen, gridtype);
     if(NC_NOERR != ncresult)
     {
