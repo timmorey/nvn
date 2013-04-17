@@ -109,6 +109,9 @@ NVN_Err NVN_CreateModel(NVN_Model* model);
 NVN_Err NVN_Create2DPlotLayer(NVN_DataGrid x, NVN_DataGrid y, int color,
                               NVN_Layer* layer);
 
+NVN_Err NVN_CreateGlacierLayer(NVN_DataGrid topg, NVN_DataGrid usurf,
+                               NVN_Layer* layer);
+
 NVN_Err NVN_CreateShadedSurfaceLayer(NVN_DataGrid grid, NVN_Layer* layer);
 
 NVN_Err NVN_CreateWindow(const char* title,

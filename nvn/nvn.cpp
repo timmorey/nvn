@@ -56,6 +56,7 @@ int main(int argc, char* argv[])
   int autonavigate = 0;
   int listenForRemote = 0;
   Server* rcserver = 0;
+  bool glaciermode = false;
 
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &commsize);
@@ -73,7 +74,7 @@ int main(int argc, char* argv[])
     slabstride[i] = 1;
   }
 
-  while((c = getopt(argc, argv, "ac:f:h:rs:t:v:w:")) != -1)
+  while((c = getopt(argc, argv, "ac:f:gh:rs:t:v:w:")) != -1)
   {
     switch(c)
     {
@@ -89,6 +90,10 @@ int main(int argc, char* argv[])
     case 'f':
       // Input data filename
       strcpy(filename, optarg);
+      break;
+
+    case 'g':
+      glaciermode = true;
       break;
 
     case 'h':
@@ -162,24 +167,74 @@ int main(int argc, char* argv[])
   //  exit(1);
   //}
 
-  NVN_Window vis;
-  NVN_Model model;
-  NVN_DataGrid grid;
-  NVN_Layer layer;
-  NVN_DataGridDescriptor desc;
-  NVN_Err nvnresult;
+  NVN_Window vis = 0;
+  NVN_Model model = 0;
+  NVN_Err nvnresult = 0;
+  NVN_Layer layer = 0;
 
-  strcpy(desc.Filename, filename);
-  strcpy(desc.Varname, varname[rank]);
-  memcpy(desc.Start, slabstart, MAX_DIMS * sizeof(MPI_Offset));
-  memcpy(desc.Count, slabcount, MAX_DIMS * sizeof(MPI_Offset));
-  memcpy(desc.Stride, slabstride, MAX_DIMS * sizeof(MPI_Offset));
-
-  nvnresult = NVN_LoadDataGrid(desc, &grid);
-
-  if(NVN_NOERR == nvnresult)
+  if(glaciermode)
   {
-    nvnresult = NVN_CreateShadedSurfaceLayer(grid, &layer);
+    NVN_DataGrid topg = 0;
+    NVN_DataGrid usurf = 0;;
+    NVN_DataGridDescriptor desc;
+
+    printf("Initializing glacier...\n");
+
+    strcpy(desc.Filename, filename);
+    strcpy(desc.Varname, "topg");
+    memcpy(desc.Start, slabstart, MAX_DIMS * sizeof(MPI_Offset));
+    memcpy(desc.Count, slabcount, MAX_DIMS * sizeof(MPI_Offset));
+    memcpy(desc.Stride, slabstride, MAX_DIMS * sizeof(MPI_Offset));
+
+    printf("Loading topg...\n");
+
+    nvnresult = NVN_LoadDataGrid(desc, &topg);
+
+    if(NVN_NOERR == nvnresult)
+    {
+      printf("Loading usurf...\n");
+
+      strcpy(desc.Varname, "usurf");
+      nvnresult = NVN_LoadDataGrid(desc, &usurf);
+      if(NVN_NOERR == nvnresult)
+      {
+        nvnresult = NVN_CreateGlacierLayer(topg, usurf, &layer);
+      }
+      else
+      {
+        fprintf(stderr, "Unable to load usurf grid.\n");
+      }
+    }
+    else
+    {
+      fprintf(stderr, "Unable to load topg grid.\n");
+    }
+  }
+  else
+  {
+    NVN_DataGrid grid;
+    NVN_DataGridDescriptor desc;
+
+    strcpy(desc.Filename, filename);
+    strcpy(desc.Varname, varname[rank]);
+    memcpy(desc.Start, slabstart, MAX_DIMS * sizeof(MPI_Offset));
+    memcpy(desc.Count, slabcount, MAX_DIMS * sizeof(MPI_Offset));
+    memcpy(desc.Stride, slabstride, MAX_DIMS * sizeof(MPI_Offset));
+
+    nvnresult = NVN_LoadDataGrid(desc, &grid);
+
+    if(NVN_NOERR == nvnresult)
+    {
+      nvnresult = NVN_CreateShadedSurfaceLayer(grid, &layer);
+    }
+    else
+    {
+      fprintf(stderr, "Unable to load grid.\n");
+    }
+  }
+
+  if(NVN_NOERR == nvnresult && layer)
+  {
     nvnresult = NVN_CreateModel(&model);
     nvnresult = NVN_AddLayer(model, layer);
     nvnresult = NVN_CreateWindow("nvn", 100, 100, 640, 480, 0, &vis);
@@ -200,10 +255,6 @@ int main(int argc, char* argv[])
 
     if(listenForRemote)
       StopRCServer(rcserver);
-  }
-  else
-  {
-    fprintf(stderr, "Unable to load grid.\n");
   }
 
   NVN_Shutdown();

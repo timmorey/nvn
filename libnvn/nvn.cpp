@@ -6,6 +6,7 @@
 #include "nvn.h"
 
 #include "DataGrid.hpp"
+#include "GlacierLayer.hpp"
 #include "GLWindow.hpp"
 #include "GLX.hpp"
 #include "Loader.hpp"
@@ -104,6 +105,22 @@ extern "C" NVN_Err NVN_CreateDataGrid(int ndims,
   if(grid && data)
   {
     *grid = (NVN_DataGrid)new DataGrid(ndims, dimlen, type, data);
+  }
+  else
+  {
+    retval = NVN_EINVARGS;
+  }
+
+  return retval;
+}
+
+extern "C" NVN_Err NVN_CreateGlacierLayer(NVN_DataGrid topg, NVN_DataGrid usurf, NVN_Layer* layer)
+{
+  NVN_Err retval = NVN_NOERR;
+
+  if(topg && usurf && layer)
+  {
+    *layer = (NVN_Layer)new GlacierLayer((DataGrid*)topg, (DataGrid*)usurf);
   }
   else
   {

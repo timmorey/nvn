@@ -15,7 +15,6 @@
 #define MPICH_SKIP_MPICXX 1
 #include <mpi.h>
 
-#include <float.h>
 #include <math.h>
 
 #include <GL/gl.h>
